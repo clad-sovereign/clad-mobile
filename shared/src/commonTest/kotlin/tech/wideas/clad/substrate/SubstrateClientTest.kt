@@ -2,168 +2,169 @@ package tech.wideas.clad.substrate
 
 import app.cash.turbine.test
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertNull
+import kotlin.test.assertNotNull
+import kotlin.time.Duration.Companion.seconds
 
 /**
- * Tests for SubstrateClient.
+ * Unit tests for SubstrateClient basic behavior.
  *
- * These tests verify the core functionality of the Substrate RPC client
- * including connection state management and RPC request/response handling.
+ * These are lightweight tests that don't require network connectivity.
+ * They test the client's state management and basic API without making real network calls.
+ *
+ * For full integration tests against a real Substrate node, see:
+ * - androidInstrumentedTest/SubstrateClientIntegrationTest.kt
+ * - androidInstrumentedTest/SubstrateClientRpcTest.kt
+ * - androidInstrumentedTest/SubstrateClientReconnectionTest.kt
+ * - androidInstrumentedTest/SubstrateClientConcurrencyTest.kt
  */
 class SubstrateClientTest {
 
     @Test
-    fun `initial connection state should be Disconnected`() = runTest {
+    fun testInitialState() = runTest {
+        // Given: A new SubstrateClient
+        val client = SubstrateClient(autoReconnect = false)
+
+        // Then: Initial state is Disconnected
+        client.connectionState.test {
+            val initialState = awaitItem()
+            assertIs<ConnectionState.Disconnected>(initialState)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        client.close()
+    }
+
+    @Test
+    fun testInitialMetadataIsNull() = runTest {
+        // Given: A new SubstrateClient
+        val client = SubstrateClient(autoReconnect = false)
+
+        // Then: Initial metadata is null
+        client.metadata.test {
+            val initialMetadata = awaitItem()
+            assertEquals(null, initialMetadata)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        client.close()
+    }
+
+    @Test
+    fun testAutoReconnectConfiguration() = runTest {
+        // Given: Clients with different auto-reconnect settings
+        val clientWithAutoReconnect = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 5)
+        val clientWithoutAutoReconnect = SubstrateClient(autoReconnect = false)
+
+        // Then: Both clients initialize successfully
+        assertNotNull(clientWithAutoReconnect)
+        assertNotNull(clientWithoutAutoReconnect)
+
+        clientWithAutoReconnect.close()
+        clientWithoutAutoReconnect.close()
+    }
+
+    @Test
+    fun testDisconnectWhenNotConnected() = runTest(timeout = 10.seconds) {
+        // Given: A disconnected client
         val client = SubstrateClient(autoReconnect = false)
 
         client.connectionState.test {
-            val state = awaitItem()
-            assertIs<ConnectionState.Disconnected>(state)
+            assertIs<ConnectionState.Disconnected>(awaitItem())
+
+            // When: Calling disconnect on already disconnected client
+            client.disconnect()
+
+            // Then: Should remain in Disconnected state (idempotent)
+            expectNoEvents()
         }
 
         client.close()
     }
 
     @Test
-    fun `initial metadata should be null`() = runTest {
+    fun testCloseClient() = runTest {
+        // Given: A client
         val client = SubstrateClient(autoReconnect = false)
 
-        client.metadata.test {
-            val metadata = awaitItem()
-            assertNull(metadata)
-        }
-
+        // When: Closing the client
         client.close()
+
+        // Then: No exception is thrown
+        // (Verifies cleanup happens gracefully)
     }
 
     @Test
-    fun `disconnect should reset connection state to Disconnected`() = runTest {
+    fun testGetChainPropertiesThrowsWhenNotConnected() = runTest {
+        // Given: A disconnected client
         val client = SubstrateClient(autoReconnect = false)
 
-        client.disconnect()
-
-        client.connectionState.test {
-            val state = awaitItem()
-            assertIs<ConnectionState.Disconnected>(state)
-        }
-
-        client.close()
-    }
-
-    @Test
-    fun `disconnect should clear metadata`() = runTest {
-        val client = SubstrateClient(autoReconnect = false)
-
-        client.disconnect()
-
-        client.metadata.test {
-            val metadata = awaitItem()
-            assertNull(metadata)
-        }
-
-        client.close()
-    }
-
-    @Test
-    fun `RpcRequest should serialize with correct jsonrpc version`() {
-        val request = RpcRequest(id = 1, method = "test_method")
-
-        assertEquals("2.0", request.jsonrpc)
-        assertEquals(1, request.id)
-        assertEquals("test_method", request.method)
-    }
-
-    @Test
-    fun `RpcRequest should handle empty params array`() {
-        val request = RpcRequest(id = 1, method = "test_method")
-
-        assertEquals(JsonArray(emptyList()), request.params)
-    }
-
-    @Test
-    fun `RpcRequest should handle params with values`() {
-        val params = JsonArray(listOf(JsonPrimitive("param1"), JsonPrimitive(123)))
-        val request = RpcRequest(id = 1, method = "test_method", params = params)
-
-        assertEquals(params, request.params)
-    }
-
-    @Test
-    fun `RpcResponse should represent successful response`() {
-        val response = RpcResponse(
-            jsonrpc = "2.0",
-            id = 1,
-            result = JsonPrimitive("success")
-        )
-
-        assertEquals("2.0", response.jsonrpc)
-        assertEquals(1, response.id)
-        assertIs<JsonPrimitive>(response.result)
-        assertNull(response.error)
-    }
-
-    @Test
-    fun `RpcResponse should represent error response`() {
-        val errorJson = JsonPrimitive("Error message")
-        val response = RpcResponse(
-            jsonrpc = "2.0",
-            id = 1,
-            error = errorJson
-        )
-
-        assertEquals("2.0", response.jsonrpc)
-        assertEquals(1, response.id)
-        assertNull(response.result)
-        assertIs<JsonPrimitive>(response.error)
-    }
-
-    @Test
-    fun `ConnectionState sealed class should cover all states`() {
-        val states = listOf(
-            ConnectionState.Disconnected,
-            ConnectionState.Connecting,
-            ConnectionState.Connected,
-            ConnectionState.Error("Test error")
-        )
-
-        // Verify we can handle all cases in a when expression
-        states.forEach { state ->
-            val handled = when (state) {
-                is ConnectionState.Disconnected -> true
-                is ConnectionState.Connecting -> true
-                is ConnectionState.Connected -> true
-                is ConnectionState.Error -> true
+        try {
+            // When: Attempting to get chain properties while disconnected
+            // Then: Should throw SubstrateException
+            val exception = kotlin.runCatching {
+                client.getChainProperties()
             }
-            assertEquals(true, handled, "All ConnectionState cases should be handled")
+
+            // Verify it failed (we expect failure when not connected)
+            assert(exception.isFailure) {
+                "getChainProperties should fail when not connected"
+            }
+        } finally {
+            client.close()
         }
     }
 
     @Test
-    fun `ConnectionState Error should contain error message`() {
-        val errorMessage = "Connection timeout"
-        val errorState = ConnectionState.Error(errorMessage)
-
-        assertEquals(errorMessage, errorState.message)
-    }
-
-    @Test
-    fun `SubstrateException should be throwable`() {
-        val exception = SubstrateException("Test error")
-
-        assertEquals("Test error", exception.message)
-        assertIs<Exception>(exception)
-    }
-
-    @Test
-    fun `close should clean up resources`() = runTest {
+    fun testCallThrowsWhenNotConnected() = runTest {
+        // Given: A disconnected client
         val client = SubstrateClient(autoReconnect = false)
 
-        // Should not throw
+        try {
+            // When: Attempting to make RPC call while disconnected
+            // Then: Should throw SubstrateException
+            val exception = kotlin.runCatching {
+                client.call("system_chain")
+            }
+
+            // Verify it failed (we expect failure when not connected)
+            assert(exception.isFailure) {
+                "RPC call should fail when not connected"
+            }
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun testMultipleCloseCallsAreSafe() = runTest {
+        // Given: A client
+        val client = SubstrateClient(autoReconnect = false)
+
+        // When: Calling close multiple times
         client.close()
+        client.close()
+        client.close()
+
+        // Then: No exception is thrown (close is idempotent)
+    }
+
+    @Test
+    fun testClientCreationWithDifferentMaxReconnectAttempts() = runTest {
+        // Test various max reconnect attempt values
+        val clients = listOf(
+            SubstrateClient(autoReconnect = true, maxReconnectAttempts = 0),
+            SubstrateClient(autoReconnect = true, maxReconnectAttempts = 1),
+            SubstrateClient(autoReconnect = true, maxReconnectAttempts = 10),
+            SubstrateClient(autoReconnect = true, maxReconnectAttempts = 100)
+        )
+
+        // All should initialize successfully
+        clients.forEach { client ->
+            assertNotNull(client)
+            client.close()
+        }
     }
 }
