@@ -127,6 +127,7 @@ class SubstrateClient(
     private var currentEndpoint: String? = null
     private var reconnectAttempts = 0
     private var reconnectJob: Job? = null
+    private var isAutoReconnecting = false
 
     private fun addMessage(direction: NodeMessage.Direction, content: String) {
         val message = NodeMessage(
@@ -156,6 +157,7 @@ class SubstrateClient(
         currentEndpoint = endpoint
         reconnectAttempts = 0
         reconnectJob?.cancel()
+        isAutoReconnecting = false // Explicit connect, not auto-reconnect
 
         performConnect()
     }
@@ -164,13 +166,18 @@ class SubstrateClient(
         val endpoint = currentEndpoint ?: return
 
         logger.d { "Attempting to connect to: $endpoint" }
-        _connectionState.value = ConnectionState.Connecting
+        // Only change to Connecting state if this is NOT an auto-reconnect attempt
+        // This prevents UI blinking when reconnection fails repeatedly
+        if (!isAutoReconnecting) {
+            _connectionState.value = ConnectionState.Connecting
+        }
 
         try {
             session = client.webSocketSession(endpoint)
             logger.d { "WebSocket session established successfully" }
             _connectionState.value = ConnectionState.Connected
             reconnectAttempts = 0 // Reset on successful connection
+            isAutoReconnecting = false // Reset auto-reconnect flag
 
             // Start listening for responses
             scope.launch {
@@ -227,6 +234,7 @@ class SubstrateClient(
 
         reconnectJob = scope.launch {
             delay(delayMs)
+            isAutoReconnecting = true
             performConnect()
         }
     }

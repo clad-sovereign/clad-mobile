@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.composeMultiplatform)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.skie)
 }
 
 kotlin {
@@ -33,6 +36,12 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             api(libs.koin.core)
             implementation(libs.kermit)
+            // Compose dependencies needed for Material Kolor
+            implementation(compose.runtime)
+            implementation(compose.ui)
+            implementation(compose.material3)
+            // Material Kolor for cross-platform color generation
+            implementation(libs.material.kolor)
         }
         androidMain.dependencies {
             implementation(libs.androidx.biometric)

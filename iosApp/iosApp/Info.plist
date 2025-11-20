@@ -4,5 +4,7 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>CLAD Signer uses Face ID to securely authenticate and protect your wallet.</string>
 </dict>
 </plist>

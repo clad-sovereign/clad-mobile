@@ -1,42 +1,28 @@
 package tech.wideas.clad.ui
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import org.koin.compose.viewmodel.koinViewModel
+import tech.wideas.clad.substrate.ConnectionState
 import tech.wideas.clad.ui.accounts.AccountsScreen
+import tech.wideas.clad.ui.accounts.AccountsViewModel
 import tech.wideas.clad.ui.connection.ConnectionScreen
 import tech.wideas.clad.ui.connection.ConnectionViewModel
 
-sealed class Screen(val route: String) {
-    data object Connection : Screen("connection")
-    data object Accounts : Screen("accounts")
-}
-
 @Composable
 fun AppNavigation() {
-    val navController = rememberNavController()
+    // Create ViewModels once at the top level (like iOS ContentView)
+    val connectionViewModel = koinViewModel<ConnectionViewModel>()
+    val accountsViewModel = koinViewModel<AccountsViewModel>()
 
-    NavHost(
-        navController = navController,
-        startDestination = Screen.Connection.route
-    ) {
-        composable(Screen.Connection.route) {
-            val viewModel = koinViewModel<ConnectionViewModel>()
-            ConnectionScreen(
-                viewModel = viewModel,
-                onConnected = {
-                    navController.navigate(Screen.Accounts.route) {
-                        popUpTo(Screen.Connection.route) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                }
-            )
-        }
+    // Observe connection state
+    val connectionState by connectionViewModel.uiState.collectAsState()
 
-        composable(Screen.Accounts.route) {
-            AccountsScreen()
-        }
+    // Simple conditional rendering based on connection state (like iOS)
+    if (connectionState.connectionState is ConnectionState.Connected) {
+        AccountsScreen(viewModel = accountsViewModel)
+    } else {
+        ConnectionScreen(viewModel = connectionViewModel)
     }
 }

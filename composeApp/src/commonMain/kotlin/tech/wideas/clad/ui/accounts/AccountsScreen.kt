@@ -58,7 +58,7 @@ fun AccountsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Account management coming in PR #2",
+                text = "Account management coming in Phase 1B",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -68,7 +68,7 @@ fun AccountsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             ) {
                 Column(
@@ -107,10 +107,10 @@ fun AccountsScreen(
                                 .size(if (connectionState is ConnectionState.Connected) size.dp else 12.dp)
                                 .background(
                                     color = when (connectionState) {
-                                        is ConnectionState.Connected -> Color(0xFF4CAF50)
-                                        is ConnectionState.Connecting -> Color(0xFFFFC107)
-                                        is ConnectionState.Disconnected -> Color(0xFF9E9E9E)
-                                        is ConnectionState.Error -> Color(0xFFF44336)
+                                        is ConnectionState.Connected -> MaterialTheme.colorScheme.tertiary
+                                        is ConnectionState.Connecting -> Color(0xFFD4A574) // Muted amber
+                                        is ConnectionState.Disconnected -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        is ConnectionState.Error -> MaterialTheme.colorScheme.error
                                     },
                                     shape = MaterialTheme.shapes.small
                                 )
@@ -150,7 +150,7 @@ fun AccountsScreen(
                                 .fillMaxWidth()
                                 .height(125.dp)
                                 .background(
-                                    color = MaterialTheme.colorScheme.surface,
+                                    color = MaterialTheme.colorScheme.background,
                                     shape = MaterialTheme.shapes.small
                                 )
                         ) {
@@ -216,7 +216,7 @@ private fun formatMessage(message: SubstrateClient.NodeMessage): Pair<String, Co
                     "→ Subscribing to finalized blocks"
                 else -> "→ Sending request"
             }
-            Pair(text, Color(0xFF2196F3)) // Blue
+            Pair(text, Color(0xFF5B8DBE)) // Muted institutional blue
         }
         SubstrateClient.NodeMessage.Direction.RECEIVED -> {
             // Parse received messages
@@ -231,7 +231,7 @@ private fun formatMessage(message: SubstrateClient.NodeMessage): Pair<String, Co
 
                     if (blockNum.isNotEmpty()) {
                         val decimal = blockNum.toLongOrNull(16) ?: 0
-                        "🏆 Imported block #$decimal (0x$hash...)"
+                        "← Imported block #$decimal (0x$hash...)"
                     } else {
                         "← New block produced"
                     }
@@ -255,7 +255,7 @@ private fun formatMessage(message: SubstrateClient.NodeMessage): Pair<String, Co
                     "✓ Subscription active"
                 else -> "← Response received"
             }
-            Pair(text, Color(0xFF4CAF50)) // Green
+            Pair(text, Color(0xFF0A8C6B)) // Emerald green (government "secure/verified" standard)
         }
     }
 }
