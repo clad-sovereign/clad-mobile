@@ -32,7 +32,7 @@ class SubstrateClientRpcTest {
     private val endpoint = "ws://localhost:9944"  // Use 10.0.2.2 to reach host from Android emulator
 
     @Before
-    fun setup() = runBlocking {
+    fun setup(): Unit = runBlocking {
         // Use Dispatchers.IO for real WebSocket I/O operations
         client = SubstrateClient(
             autoReconnect = false,
@@ -43,7 +43,7 @@ class SubstrateClientRpcTest {
     }
 
     @After
-    fun teardown() = runBlocking {
+    fun teardown(): Unit = runBlocking {
         client.disconnect()
         client.close()
     }
@@ -53,7 +53,7 @@ class SubstrateClientRpcTest {
     // ============================================
 
     @Test
-    fun testSystemProperties() = runBlocking {
+    fun testSystemProperties(): Unit = runBlocking {
         // When: Fetching system properties
         val result = client.call("system_properties")
 
@@ -74,7 +74,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testGetChainProperties() = runBlocking {
+    fun testGetChainProperties(): Unit = runBlocking {
         // When: Fetching chain properties using helper method
         val properties = client.getChainProperties()
 
@@ -83,7 +83,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testGetMetadata() = runBlocking {
+    fun testGetMetadata(): Unit = runBlocking {
         // When: Fetching runtime metadata
         val result = client.call("state_getMetadata")
 
@@ -97,7 +97,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testSystemChain() = runBlocking {
+    fun testSystemChain(): Unit = runBlocking {
         // When: Fetching chain name
         val result = client.call("system_chain")
 
@@ -110,7 +110,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testSystemName() = runBlocking {
+    fun testSystemName(): Unit = runBlocking {
         // When: Fetching system name
         val result = client.call("system_name")
 
@@ -123,7 +123,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testSystemVersion() = runBlocking {
+    fun testSystemVersion(): Unit = runBlocking {
         // When: Fetching system version
         val result = client.call("system_version")
 
@@ -136,7 +136,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testChainGetBlockHash() = runBlocking {
+    fun testChainGetBlockHash(): Unit = runBlocking {
         // When: Fetching latest block hash (no params = latest block)
         val result = client.call("chain_getBlockHash")
 
@@ -150,7 +150,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testChainGetHeader() = runBlocking {
+    fun testChainGetHeader(): Unit = runBlocking {
         // When: Fetching latest chain header
         val result = client.call("chain_getHeader")
 
@@ -166,7 +166,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testRuntimeVersion() = runBlocking {
+    fun testRuntimeVersion(): Unit = runBlocking {
         // When: Fetching runtime version
         val result = client.call("state_getRuntimeVersion")
 
@@ -184,7 +184,7 @@ class SubstrateClientRpcTest {
     // ============================================
 
     @Test
-    fun testInvalidRpcMethod() = runBlocking {
+    fun testInvalidRpcMethod(): Unit = runBlocking {
         // When: Calling non-existent RPC method
         val exception = assertFailsWith<SubstrateException> {
             client.call("invalid_method_that_does_not_exist")
@@ -195,7 +195,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testInvalidMethodParams() = runBlocking {
+    fun testInvalidMethodParams(): Unit = runBlocking {
         // When: Calling method with invalid parameter format
         val invalidParams = JsonArray(listOf(JsonPrimitive("not_a_valid_hash")))
 
@@ -212,7 +212,7 @@ class SubstrateClientRpcTest {
     // ============================================
 
     @Test
-    fun testRpcCallWithCustomTimeout() = runBlocking {
+    fun testRpcCallWithCustomTimeout(): Unit = runBlocking {
         // When: Calling with short timeout (but should complete in time)
         val result = client.call(
             method = "system_chain",
@@ -224,7 +224,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testRpcCallTimeoutExceeded() = runBlocking {
+    fun testRpcCallTimeoutExceeded(): Unit = runBlocking {
         // When: Calling with extremely short timeout on slow operation
         val exception = assertFailsWith<SubstrateException> {
             client.call(
@@ -242,7 +242,7 @@ class SubstrateClientRpcTest {
     // ============================================
 
     @Test
-    fun testChainGetBlockHashWithNumber() = runBlocking {
+    fun testChainGetBlockHashWithNumber(): Unit = runBlocking {
         // When: Fetching block hash at specific height (genesis block)
         val params = JsonArray(listOf(JsonPrimitive(0)))
         val result = client.call("chain_getBlockHash", params)
@@ -257,7 +257,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testChainGetBlock() = runBlocking {
+    fun testChainGetBlock(): Unit = runBlocking {
         // Given: Latest block hash
         val hashResult = client.call("chain_getBlockHash")
         assertNotNull(hashResult)
@@ -276,7 +276,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testStateGetStorage() = runBlocking {
+    fun testStateGetStorage(): Unit = runBlocking {
         // When: Querying storage (system number - always exists)
         // The storage key for System.Number is well-known
         val storageKey = "0x26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac"
@@ -294,7 +294,7 @@ class SubstrateClientRpcTest {
     // ============================================
 
     @Test
-    fun testMultipleSequentialRpcCalls() = runBlocking {
+    fun testMultipleSequentialRpcCalls(): Unit = runBlocking {
         // When: Making multiple sequential calls
         val chain = client.call("system_chain")
         val name = client.call("system_name")
@@ -314,7 +314,7 @@ class SubstrateClientRpcTest {
     }
 
     @Test
-    fun testRpcCallAfterMetadataFetch() = runBlocking {
+    fun testRpcCallAfterMetadataFetch(): Unit = runBlocking {
         // Given: Metadata has been fetched
         client.fetchMetadata()
         delay(1000)
