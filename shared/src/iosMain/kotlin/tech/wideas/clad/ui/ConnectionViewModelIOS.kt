@@ -51,10 +51,38 @@ class ConnectionViewModelIOS(
                 _uiState.value = _uiState.value.copy(
                     connectionState = state,
                     isLoading = state is ConnectionState.Connecting,
-                    error = if (state is ConnectionState.Error) state.message else null
+                    error = if (state is ConnectionState.Error) formatErrorMessage(state.message) else null
                 )
             }
         }
+    }
+
+    private fun formatErrorMessage(rawMessage: String): String {
+        // Extract clean error message from raw exception text
+        // Example: "Failed to connect to /127.0.0.1:9944" from full stack trace
+
+        // Check if it contains "Could not connect to the server"
+        if (rawMessage.contains("Could not connect to the server", ignoreCase = true)) {
+            // Extract the endpoint from the error
+            val endpoint = _uiState.value.endpoint
+            return "Failed to connect to $endpoint"
+        }
+
+        // Check for connection refused
+        if (rawMessage.contains("Connection refused", ignoreCase = true)) {
+            val endpoint = _uiState.value.endpoint
+            return "Failed to connect to $endpoint"
+        }
+
+        // Check for timeout
+        if (rawMessage.contains("timeout", ignoreCase = true)) {
+            val endpoint = _uiState.value.endpoint
+            return "Connection timeout to $endpoint"
+        }
+
+        // Default: try to extract first line or first meaningful part
+        val firstLine = rawMessage.lines().firstOrNull { it.isNotBlank() } ?: rawMessage
+        return firstLine.take(100) // Limit length to 100 chars
     }
 
     fun onEndpointChanged(endpoint: String) {

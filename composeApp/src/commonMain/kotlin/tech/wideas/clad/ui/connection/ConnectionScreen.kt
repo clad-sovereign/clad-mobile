@@ -13,18 +13,9 @@ import tech.wideas.clad.substrate.ConnectionState
 
 @Composable
 fun ConnectionScreen(
-    viewModel: ConnectionViewModel,
-    onConnected: () -> Unit
+    viewModel: ConnectionViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    // Navigate to accounts screen when connected
-    // LaunchedEffect with isConnected key ensures this only runs when connection state changes to Connected
-    androidx.compose.runtime.LaunchedEffect(uiState.connectionState) {
-        if (uiState.connectionState is ConnectionState.Connected) {
-            onConnected()
-        }
-    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -76,37 +67,21 @@ fun ConnectionScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            when (val state = uiState.connectionState) {
-                is ConnectionState.Disconnected -> {
-                    Button(
-                        onClick = viewModel::connect,
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !uiState.isLoading
-                    ) {
-                        Text("Connect to Node")
-                    }
-                }
-                is ConnectionState.Connecting -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Connecting...", style = MaterialTheme.typography.bodyMedium)
-                }
-                is ConnectionState.Connected -> {
-                    // Will navigate away
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp)
-                    )
-                }
-                is ConnectionState.Error -> {
-                    Button(
-                        onClick = viewModel::connect,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Retry Connection")
-                    }
-                }
+            // Single button that shows loading state via text and disabled state
+            val buttonText = when (val state = uiState.connectionState) {
+                is ConnectionState.Connecting -> "Connecting..."
+                is ConnectionState.Connected -> "Connecting..."
+                is ConnectionState.Error -> "Retry Connection"
+                else -> "Connect to Node"
+            }
+
+            Button(
+                onClick = viewModel::connect,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = uiState.connectionState !is ConnectionState.Connecting &&
+                         uiState.connectionState !is ConnectionState.Connected
+            ) {
+                Text(buttonText)
             }
 
             Spacer(modifier = Modifier.height(32.dp))

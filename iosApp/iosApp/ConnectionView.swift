@@ -5,77 +5,85 @@ import Combine
 struct ConnectionView: View {
     @ObservedObject var viewModel: ConnectionViewModelWrapper
     @Binding var isConnected: Bool
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        let colors = CladColors.ColorScheme.forScheme(colorScheme)
 
-            // App Title
-            VStack(spacing: 8) {
-                Text("CLAD Signer")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.accentColor)
+        ZStack {
+            // Background - Adapts to system light/dark mode
+            colors.background
+                .ignoresSafeArea()
 
-                Text("Sovereign Real-World Asset Issuance")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-            }
+            VStack(spacing: 0) {
+                // App Title
+                VStack(spacing: 8) {
+                    Text("CLAD Signer")
+                        .font(CladTypography.headlineLarge)
+                        .foregroundColor(colors.primary)
 
-            Spacer()
+                    Text("Sovereign Real-World Asset Issuance")
+                        .font(CladTypography.bodyMedium)
+                        .foregroundColor(colors.onSurfaceVariant)
+                        .multilineTextAlignment(.center)
+                }
 
-            // Endpoint Input
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("ws://127.0.0.1:9944", text: $viewModel.endpoint)
-                    .textFieldStyle(.roundedBorder)
-                    .autocapitalization(.none)
-                    .disabled(viewModel.isLoading)
-                    .onChange(of: viewModel.endpoint) { newValue in
-                        viewModel.onEndpointChanged(newValue)
+                Spacer()
+                    .frame(height: 48)
+
+                // Endpoint Input
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("ws://127.0.0.1:9944", text: $viewModel.endpoint)
+                        .font(CladTypography.bodyLarge)
+                        .padding(16)
+                        .background(colors.surface)
+                        .foregroundColor(colors.onSurface)
+                        .cornerRadius(10)
+                        .autocapitalization(.none)
+                        .autocorrectionDisabled()
+                        .disabled(viewModel.isLoading)
+                        .onChange(of: viewModel.endpoint) { newValue in
+                            viewModel.onEndpointChanged(newValue)
+                        }
+
+                    if let error = viewModel.error {
+                        Text(error)
+                            .font(CladTypography.caption)
+                            .foregroundColor(colors.error)
                     }
-
-                if let error = viewModel.error {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(.red)
                 }
-            }
-            .padding(.horizontal, 24)
 
-            // Connection Button / Status
-            if viewModel.isConnecting {
-                VStack(spacing: 16) {
-                    ProgressView()
-                    Text("Connecting...")
-                        .font(.body)
-                }
-            } else if viewModel.isConnected {
-                ProgressView()
-            } else {
+                Spacer()
+                    .frame(height: 24)
+
+                // Single button that shows loading state via text and disabled state
                 Button(action: {
                     viewModel.connect()
                 }) {
-                    Text(viewModel.hasError ? "Retry Connection" : "Connect to Node")
+                    Text(viewModel.buttonText)
+                        .font(CladTypography.bodyLarge)
+                        .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 24)
+                        .background(viewModel.isButtonEnabled ? colors.primary : colors.primary.opacity(0.5))
+                        .foregroundColor(colors.onPrimary)
+                        .clipShape(Capsule())
                 }
-                .padding(.horizontal, 24)
-                .disabled(viewModel.isLoading)
+                .disabled(!viewModel.isButtonEnabled)
+
+                Spacer()
+                    .frame(height: 32)
+
+                // Footer
+                Text("For finance ministries, debt offices and state issuers")
+                    .font(CladTypography.caption)
+                    .foregroundColor(colors.onSurfaceVariant)
+                    .multilineTextAlignment(.center)
             }
-
-            Spacer()
-
-            // Footer
-            Text("For finance ministries, debt offices and state issuers")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+            .frame(maxHeight: .infinity)
+            .padding(.horizontal)
         }
-        .padding(.vertical, 24)
         .onChange(of: viewModel.isConnected) { connected in
             if connected {
                 isConnected = true
@@ -104,6 +112,20 @@ class ConnectionViewModelWrapper: ObservableObject {
 
     var hasError: Bool {
         error != nil
+    }
+
+    var buttonText: String {
+        if connectionState == "connecting" || connectionState == "connected" {
+            return "Connecting..."
+        } else if hasError {
+            return "Retry Connection"
+        } else {
+            return "Connect to Node"
+        }
+    }
+
+    var isButtonEnabled: Bool {
+        connectionState != "connecting" && connectionState != "connected"
     }
 
     init(viewModel: ConnectionViewModelIOS) {

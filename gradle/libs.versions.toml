@@ -26,6 +26,7 @@ kotlinxSerialization = "1.9.0"
 ktor = "3.3.2"
 navigationCompose = "2.9.1"
 skie = "0.10.8"
+materialKolor = "4.0.5"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -62,6 +63,7 @@ koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
 koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
+material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

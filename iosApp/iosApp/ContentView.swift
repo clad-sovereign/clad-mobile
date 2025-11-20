@@ -29,47 +29,59 @@ struct BiometricAuthView: View {
     @Binding var isAuthenticated: Bool
     @Binding var authenticationError: String?
     @State private var isAuthenticating = false
+    @Environment(\.colorScheme) var colorScheme
 
     private let biometricAuth = BiometricAuth_iosKt.createBiometricAuth()
 
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        let colors = CladColors.ColorScheme.forScheme(colorScheme)
 
-            Image(systemName: "faceid")
-                .font(.system(size: 80))
-                .foregroundColor(.accentColor)
+        ZStack {
+            // Background - Adapts to system light/dark mode
+            colors.background
+                .ignoresSafeArea()
 
-            Text("CLAD Signer")
-                .font(.largeTitle)
-                .fontWeight(.bold)
+            VStack(spacing: 24) {
+                Spacer()
 
-            Text("Authenticate to continue")
-                .font(.body)
-                .foregroundColor(.secondary)
+                Image(systemName: "faceid")
+                    .font(.system(size: 80))
+                    .foregroundColor(colors.primary)
 
-            if let error = authenticationError {
-                Text(error)
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-            }
+                Text("CLAD Signer")
+                    .font(CladTypography.headlineLarge)
+                    .foregroundColor(colors.primary)
 
-            if isAuthenticating {
-                ProgressView()
-            } else {
-                Button(action: authenticate) {
-                    Text("Authenticate")
-                        .frame(maxWidth: 200)
-                        .padding()
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(10)
+                Text("Authenticate to continue")
+                    .font(CladTypography.bodyLarge)
+                    .foregroundColor(colors.tertiary)
+
+                if let error = authenticationError {
+                    Text(error)
+                        .font(CladTypography.caption)
+                        .foregroundColor(colors.error)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
                 }
-            }
 
-            Spacer()
+                if isAuthenticating {
+                    ProgressView()
+                        .tint(colors.primary)
+                } else {
+                    Button(action: authenticate) {
+                        Text("Authenticate")
+                            .font(CladTypography.bodyLarge)
+                            .fontWeight(.medium)
+                            .frame(maxWidth: 200)
+                            .padding(16)
+                            .background(colors.primary)
+                            .foregroundColor(colors.onPrimary)
+                            .cornerRadius(10)
+                    }
+                }
+
+                Spacer()
+            }
         }
         .onAppear {
             // Automatically trigger biometric authentication on appear

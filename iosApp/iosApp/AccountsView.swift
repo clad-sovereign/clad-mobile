@@ -4,88 +4,113 @@ import Combine
 
 struct AccountsView: View {
     @ObservedObject var viewModel: AccountsViewModelWrapper
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                // Title
-                Text("Accounts")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
+        let colors = CladColors.ColorScheme.forScheme(colorScheme)
 
-                Text("Account management coming in PR #2")
-                    .font(.body)
-                    .foregroundColor(.secondary)
+        ZStack {
+            // Background - Adapts to system light/dark mode
+            colors.background
+                .ignoresSafeArea()
 
-                // Connection Status Card
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Text(viewModel.connectionStatusText)
-                            .font(.headline)
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Title
+                    Text("Accounts")
+                        .font(CladTypography.headlineLarge)
+                        .foregroundColor(colors.onBackground)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Spacer()
+                    Text("Account management coming in Phase 1B")
+                        .font(CladTypography.bodyLarge)
+                        .foregroundColor(colors.onSurfaceVariant)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                        // Status indicator
-                        Circle()
-                            .fill(viewModel.connectionStatusColor)
-                            .frame(width: 12, height: 12)
-                            .scaleEffect(viewModel.isConnected ? viewModel.pulseScale : 1.0)
-                    }
+                    // Connection Status Card
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Text(viewModel.connectionStatusText)
+                                .font(CladTypography.titleMedium)
+                                .foregroundColor(colors.onSurface)
 
-                    if viewModel.isConnected {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 4) {
-                                Text("✓")
-                                    .foregroundColor(.green)
-                                Text("Substrate RPC connection established")
-                                    .font(.body)
-                                    .foregroundColor(.secondary)
-                            }
+                            Spacer()
 
-                            HStack(spacing: 4) {
-                                Text("✓")
-                                    .foregroundColor(.green)
-                                Text("Metadata fetched successfully")
-                                    .font(.body)
-                                    .foregroundColor(.secondary)
-                            }
+                            // Status indicator with pulse animation
+                            Circle()
+                                .fill(viewModel.connectionStatusColor)
+                                .frame(
+                                    width: viewModel.isConnected ? viewModel.pulseSize : 12,
+                                    height: viewModel.isConnected ? viewModel.pulseSize : 12
+                                )
                         }
 
-                        Divider()
-                            .padding(.vertical, 8)
-
-                        // Node Stream Section
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Node Stream")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-
-                            // Messages container
-                            VStack(alignment: .leading, spacing: 4) {
-                                ForEach(viewModel.recentMessages, id: \.id) { message in
-                                    NodeMessageRow(message: message)
+                        if viewModel.isConnected {
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(spacing: 4) {
+                                    Text("✓ Substrate RPC connection established")
+                                        .font(CladTypography.bodyMedium)
+                                        .foregroundColor(colors.onSurfaceVariant)
                                 }
 
-                                if viewModel.recentMessages.isEmpty {
-                                    Text("Waiting for messages...")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .padding(.vertical, 8)
+                                HStack(spacing: 4) {
+                                    Text("✓ Metadata fetched successfully")
+                                        .font(CladTypography.bodyMedium)
+                                        .foregroundColor(colors.onSurfaceVariant)
                                 }
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(12)
-                            .background(Color(UIColor.systemBackground))
-                            .cornerRadius(8)
-                            .frame(height: 125)
+
+                            Divider()
+                                .background(colors.tertiary.opacity(0.3))
+                                .padding(.vertical, 8)
+
+                            // Node Stream Section
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Node Stream")
+                                    .font(CladTypography.labelLarge)
+                                    .foregroundColor(colors.onSurfaceVariant)
+
+                                // Messages container with scroll and auto-scroll
+                                ScrollViewReader { proxy in
+                                    let messages = viewModel.recentMessages(colorScheme: colors)
+                                    ScrollView {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            ForEach(messages, id: \.id) { message in
+                                                NodeMessageRow(message: message)
+                                                    .id(message.id)
+                                            }
+
+                                            if messages.isEmpty {
+                                                Text("Waiting for messages...")
+                                                    .font(CladTypography.caption)
+                                                    .foregroundColor(colors.tertiary)
+                                                    .padding(.vertical, 8)
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                    .padding(12)
+                                    .background(colors.background)
+                                    .cornerRadius(8)
+                                    .frame(height: 125)
+                                    .onChange(of: viewModel.messages.count) { _ in
+                                        // Auto-scroll to bottom when new messages arrive
+                                        if let lastMessage = messages.last {
+                                            withAnimation {
+                                                proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
+                    .padding(16)
+                    .background(colors.surface)
+                    .cornerRadius(12)
                 }
-                .padding(16)
-                .background(Color(UIColor.secondarySystemBackground))
-                .cornerRadius(12)
+                .padding(24)
             }
-            .padding(24)
         }
         .onAppear {
             viewModel.startPulseAnimation()
@@ -95,12 +120,22 @@ struct AccountsView: View {
 
 struct NodeMessageRow: View {
     let message: NodeMessageWrapper
+    @State private var opacity: Double = 0
+    @State private var offsetY: CGFloat = 10
 
     var body: some View {
         Text(message.displayText)
-            .font(.system(size: 13))
+            .font(CladTypography.codeSmall)
             .foregroundColor(message.color)
             .lineLimit(2)
+            .opacity(opacity)
+            .offset(y: offsetY)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.3)) {
+                    opacity = 1
+                    offsetY = 0
+                }
+            }
     }
 }
 
@@ -119,7 +154,7 @@ class AccountsViewModelWrapper: ObservableObject {
 
     @Published var connectionState: String = "disconnected"
     @Published var messages: [SubstrateClient.NodeMessage] = []
-    @Published var pulseScale: CGFloat = 1.0
+    @Published var pulseSize: CGFloat = 12.0
 
     var isConnected: Bool {
         connectionState == "connected"
@@ -136,16 +171,16 @@ class AccountsViewModelWrapper: ObservableObject {
 
     var connectionStatusColor: Color {
         switch connectionState {
-        case "connected": return .green
-        case "connecting": return .yellow
-        case "error": return .red
-        default: return .gray
+        case "connected": return CladColors.statusConnected
+        case "connecting": return CladColors.statusConnecting
+        case "error": return CladColors.statusError
+        default: return CladColors.statusDisconnected
         }
     }
 
-    var recentMessages: [NodeMessageWrapper] {
+    func recentMessages(colorScheme: CladColors.ColorScheme) -> [NodeMessageWrapper] {
         Array(messages.suffix(5)).map { message in
-            let (text, color) = formatMessage(message)
+            let (text, color) = formatMessage(message, colorScheme: colorScheme)
             return NodeMessageWrapper(
                 id: message.id.description,
                 displayText: text,
@@ -187,12 +222,16 @@ class AccountsViewModelWrapper: ObservableObject {
     }
 
     func startPulseAnimation() {
-        withAnimation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-            pulseScale = 1.2
+        withAnimation(
+            Animation
+                .easeInOut(duration: 0.8)
+                .repeatForever(autoreverses: true)
+        ) {
+            pulseSize = 10.0
         }
     }
 
-    private func formatMessage(_ message: SubstrateClient.NodeMessage) -> (String, Color) {
+    private func formatMessage(_ message: SubstrateClient.NodeMessage, colorScheme: CladColors.ColorScheme) -> (String, Color) {
         let content = message.content
 
         switch message.direction {
@@ -209,7 +248,7 @@ class AccountsViewModelWrapper: ObservableObject {
             } else {
                 text = "→ Sending request"
             }
-            return (text, Color.blue)
+            return (text, colorScheme.messageSent)
 
         case .received:
             let text: String
@@ -219,7 +258,7 @@ class AccountsViewModelWrapper: ObservableObject {
                    let endRange = content[blockNumRange.upperBound...].range(of: "\"") {
                     let blockNumHex = String(content[blockNumRange.upperBound..<endRange.lowerBound])
                     if let decimal = Int64(blockNumHex, radix: 16) {
-                        text = "🏆 Imported block #\(decimal)"
+                        text = "← Imported block #\(decimal)"
                     } else {
                         text = "← New block produced"
                     }
@@ -247,10 +286,10 @@ class AccountsViewModelWrapper: ObservableObject {
             } else {
                 text = "← Response received"
             }
-            return (text, Color.green)
+            return (text, colorScheme.messageReceived)
 
         default:
-            return ("Unknown message", Color.gray)
+            return ("Unknown message", CladColors.statusDisconnected)
         }
     }
 
