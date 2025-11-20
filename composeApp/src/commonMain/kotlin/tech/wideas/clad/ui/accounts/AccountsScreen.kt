@@ -1,6 +1,6 @@
 package tech.wideas.clad.ui.accounts
 
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -88,10 +88,21 @@ fun AccountsScreen(
                             fontWeight = FontWeight.SemiBold
                         )
 
-                        // Connection status indicator
+                        // Connection status indicator with pulsing size animation for connected state
+                        val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+                        val size by infiniteTransition.animateFloat(
+                            initialValue = 10f,
+                            targetValue = 12f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(800, easing = LinearOutSlowInEasing),
+                                repeatMode = RepeatMode.Reverse
+                            ),
+                            label = "size"
+                        )
+
                         Box(
                             modifier = Modifier
-                                .size(12.dp)
+                                .size(if (connectionState is ConnectionState.Connected) size.dp else 12.dp)
                                 .background(
                                     color = when (connectionState) {
                                         is ConnectionState.Connected -> Color(0xFF4CAF50)
