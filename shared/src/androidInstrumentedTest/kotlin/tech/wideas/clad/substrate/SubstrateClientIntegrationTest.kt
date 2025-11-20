@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import org.junit.After
@@ -11,6 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -209,17 +211,19 @@ class SubstrateClientIntegrationTest {
     fun testPendingRequestsCleanedUpOnDisconnect(): Unit = runBlocking {
         // Given: A connected client
         client.connect(primaryEndpoint)
-        delay(2000) // Wait for connection
 
-        // When: Starting multiple RPC calls but disconnecting before they complete
-        val job = kotlinx.coroutines.launch {
-            try {
+        // Wait for connection state to change
+        while (client.connectionState.value != ConnectionState.Connected) {
+            delay(100)
+        }
+
+        // When: Starting an RPC call but disconnecting before it completes
+        val job = launch {
+            val exception = assertFailsWith<SubstrateException> {
                 // This call will be interrupted by disconnect
                 client.call("state_getMetadata", timeoutMs = 60000)
-            } catch (e: SubstrateException) {
-                // Expected: Should get "Client disconnected" exception
-                assertEquals("Client disconnected", e.message)
             }
+            assertEquals("Client disconnected", exception.message)
         }
 
         // Give the RPC call time to be sent
