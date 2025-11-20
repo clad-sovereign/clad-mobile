@@ -47,7 +47,7 @@ fun ConnectionScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Sovereign Bond Tokenization",
+                text = "Sovereign Real-World Asset Issuance",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -112,7 +112,7 @@ fun ConnectionScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "For Ministry and Debt Office Officials",
+                text = "For finance ministries, debt offices and state issuers",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

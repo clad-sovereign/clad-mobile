@@ -14,6 +14,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
+import tech.wideas.clad.currentTimeMillis
 
 /**
  * Connection state of the Substrate client
@@ -51,16 +54,36 @@ data class RpcResponse(
  * @param maxReconnectAttempts Maximum number of reconnection attempts
  * @param dispatcher The coroutine dispatcher to use (defaults to Dispatchers.Default)
  *
- * Note: This client should be scoped to a ViewModel's lifecycle to ensure
- * proper coroutine cancellation. The internal scope will be created automatically.
+ * ## Lifecycle and Scope Management
+ *
+ * This client uses an application-level coroutine scope that persists across
+ * screen navigation. The connection remains active even when navigating between
+ * screens, allowing for continuous blockchain activity monitoring.
+ *
+ * **Scope Lifecycle:**
+ * - Created automatically with the provided dispatcher and SupervisorJob
+ * - Persists until explicit disconnect() or close() is called
+ * - Not tied to any specific ViewModel lifecycle
+ * - This design enables connection persistence across navigation
+ *
+ * **When to disconnect:**
+ * - When the user explicitly disconnects from the node
+ * - During app termination (via close())
+ * - When switching to a different node endpoint
+ *
+ * **Cleanup:**
+ * - Call close() to cancel all coroutines and release resources
+ * - This should typically be done in app shutdown or when the singleton
+ *   SubstrateClient instance is no longer needed
  */
+@OptIn(ExperimentalUuidApi::class)
 class SubstrateClient(
     private val autoReconnect: Boolean = true,
     private val maxReconnectAttempts: Int = 5,
     dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     private val logger = Logger.withTag("SubstrateClient")
-    private var scope: CoroutineScope = CoroutineScope(dispatcher + SupervisorJob())
+    private val scope: CoroutineScope = CoroutineScope(dispatcher + SupervisorJob())
     private val client = HttpClient {
         install(WebSockets)
         install(ContentNegotiation) {
@@ -88,20 +111,38 @@ class SubstrateClient(
     private val _metadata = MutableStateFlow<String?>(null)
     val metadata: StateFlow<String?> = _metadata.asStateFlow()
 
+    data class NodeMessage(
+        val id: Uuid = Uuid.random(),
+        val timestamp: Long,
+        val direction: Direction,
+        val content: String
+    ) {
+        enum class Direction { SENT, RECEIVED }
+    }
+
+    private val _messages = MutableStateFlow<List<NodeMessage>>(emptyList())
+    val messages: StateFlow<List<NodeMessage>> = _messages.asStateFlow()
+    private val maxMessages = 50 // Keep last 50 messages (UI displays last 5)
+
     private var currentEndpoint: String? = null
     private var reconnectAttempts = 0
     private var reconnectJob: Job? = null
 
+    private fun addMessage(direction: NodeMessage.Direction, content: String) {
+        val message = NodeMessage(
+            timestamp = currentTimeMillis(),
+            direction = direction,
+            content = content
+        )
+        _messages.value = (_messages.value + message).takeLast(maxMessages)
+        logger.d { "Message added: ${direction} - ${content.take(50)}... Total messages: ${_messages.value.size}" }
+    }
+
     /**
-     * Set a custom coroutine scope (e.g., viewModelScope).
-     * This should be called before connect() to tie the client's lifecycle to the scope.
-     *
-     * @param customScope The coroutine scope to use (typically viewModelScope)
+     * Clear all collected messages
      */
-    fun setScope(customScope: CoroutineScope) {
-        // Cancel existing scope if any operations are running
-        scope.cancel()
-        scope = customScope
+    fun clearMessages() {
+        _messages.value = emptyList()
     }
 
     /**
@@ -122,10 +163,12 @@ class SubstrateClient(
     private suspend fun performConnect() {
         val endpoint = currentEndpoint ?: return
 
+        logger.d { "Attempting to connect to: $endpoint" }
         _connectionState.value = ConnectionState.Connecting
 
         try {
             session = client.webSocketSession(endpoint)
+            logger.d { "WebSocket session established successfully" }
             _connectionState.value = ConnectionState.Connected
             reconnectAttempts = 0 // Reset on successful connection
 
@@ -134,13 +177,41 @@ class SubstrateClient(
                 listenForResponses()
             }
 
-            // Fetch metadata after WebSocket is fully established
+            // Fetch metadata and chain info after WebSocket is fully established
             scope.launch {
                 // Wait for first incoming frame to confirm connection is ready
                 delay(100)
+                try {
+                    // Fetch chain properties first (lighter request)
+                    logger.d { "Fetching chain properties..." }
+                    getChainProperties()
+                    logger.d { "Chain properties fetched" }
+                } catch (e: Exception) {
+                    logger.e(e) { "Failed to fetch chain properties: ${e.message}" }
+                }
+                // Then fetch metadata
                 fetchMetadata()
+
+                // Subscribe to new block headers for real-time updates
+                try {
+                    logger.d { "Subscribing to new block headers..." }
+                    subscribeNewHeads()
+                    logger.d { "Subscribed to new block headers" }
+                } catch (e: Exception) {
+                    logger.e(e) { "Failed to subscribe to new heads: ${e.message}" }
+                }
+
+                // Subscribe to finalized blocks
+                try {
+                    logger.d { "Subscribing to finalized blocks..." }
+                    subscribeFinalizedHeads()
+                    logger.d { "Subscribed to finalized blocks" }
+                } catch (e: Exception) {
+                    logger.e(e) { "Failed to subscribe to finalized heads: ${e.message}" }
+                }
             }
         } catch (e: Exception) {
+            logger.e(e) { "Connection failed to $endpoint: ${e.message}" }
             _connectionState.value = ConnectionState.Error(e.message ?: "Connection failed")
             attemptReconnect(e)
         }
@@ -188,6 +259,7 @@ class SubstrateClient(
         session = null
         _connectionState.value = ConnectionState.Disconnected
         _metadata.value = null
+        _messages.value = emptyList()
     }
 
     /**
@@ -212,6 +284,7 @@ class SubstrateClient(
 
         try {
             currentSession.send(Frame.Text(requestJson))
+            addMessage(NodeMessage.Direction.SENT, requestJson)
 
             // Wait for response with timeout
             val response = try {
@@ -241,12 +314,30 @@ class SubstrateClient(
      */
     suspend fun fetchMetadata() {
         try {
+            logger.d { "Fetching metadata from node..." }
             val result = call("state_getMetadata", JsonArray(emptyList()))
             _metadata.value = result?.jsonPrimitive?.content
+            logger.d { "Metadata fetched successfully" }
         } catch (e: Exception) {
             // Metadata fetch failed, but don't disconnect
             logger.e(e) { "Failed to fetch metadata: ${e.message}" }
         }
+    }
+
+    /**
+     * Subscribe to new block headers
+     * This will send continuous updates as new blocks are produced
+     */
+    suspend fun subscribeNewHeads() {
+        call("chain_subscribeNewHeads", JsonArray(emptyList()))
+    }
+
+    /**
+     * Subscribe to finalized block headers
+     * This will send updates when blocks are finalized
+     */
+    suspend fun subscribeFinalizedHeads() {
+        call("chain_subscribeFinalizedHeads", JsonArray(emptyList()))
     }
 
     /**
@@ -275,10 +366,12 @@ class SubstrateClient(
     private suspend fun listenForResponses() {
         val currentSession = session ?: return
 
+        logger.d { "Started listening for WebSocket responses" }
         try {
             for (frame in currentSession.incoming) {
                 if (frame is Frame.Text) {
                     val text = frame.readText()
+                    addMessage(NodeMessage.Direction.RECEIVED, text)
                     try {
                         val response = json.decodeFromString<RpcResponse>(text)
                         // Complete the deferred corresponding to this response ID
@@ -304,6 +397,7 @@ class SubstrateClient(
             }
         } catch (e: Exception) {
             // Connection lost - attempt reconnection if enabled
+            logger.e(e) { "Connection lost while listening for responses: ${e.message}" }
             _connectionState.value = ConnectionState.Error(e.message ?: "Connection lost")
             attemptReconnect(e)
         }

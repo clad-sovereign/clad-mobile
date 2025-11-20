@@ -27,10 +27,6 @@ class ConnectionViewModel(
     val uiState: StateFlow<ConnectionUiState> = _uiState.asStateFlow()
 
     init {
-        // Tie SubstrateClient's lifecycle to this ViewModel's scope
-        // This ensures coroutines are cancelled when ViewModel is cleared
-        substrateClient.setScope(viewModelScope)
-
         loadSavedEndpoint()
         observeConnectionState()
     }
