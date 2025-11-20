@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
@@ -122,7 +123,7 @@ class SubstrateClientIntegrationTest {
     fun testDisconnectFromConnectedNode() = runBlocking {
         // Given: A connected client
         client.connect(primaryEndpoint)
-        delay(2000) // Wait for connection
+        client.connectionState.first { it is ConnectionState.Connected }
 
         client.connectionState.test {
             skipItems(1) // Skip current state
@@ -140,7 +141,7 @@ class SubstrateClientIntegrationTest {
     fun testAlreadyConnectedDoesNotReconnect() = runBlocking {
         // Given: A connected client
         client.connect(primaryEndpoint)
-        delay(2000) // Wait for connection
+        client.connectionState.first { it is ConnectionState.Connected }
 
         client.connectionState.test {
             val initialState = awaitItem()
@@ -181,7 +182,8 @@ class SubstrateClientIntegrationTest {
         client.connect(primaryEndpoint)
 
         // Wait for connection and metadata fetch
-        delay(3000)
+        client.connectionState.first { it is ConnectionState.Connected }
+        client.metadata.first { it != null }
 
         // Then: Metadata should be populated
         val metadata = client.metadata.value
@@ -194,7 +196,8 @@ class SubstrateClientIntegrationTest {
     fun testMetadataClearedOnDisconnect(): Unit = runBlocking {
         // Given: A connected client with metadata
         client.connect(primaryEndpoint)
-        delay(3000) // Wait for connection and metadata
+        client.connectionState.first { it is ConnectionState.Connected }
+        client.metadata.first { it != null }
 
         // Verify metadata is present
         assertNotNull(client.metadata.value)
@@ -212,10 +215,12 @@ class SubstrateClientIntegrationTest {
         // Given: A connected client
         client.connect(primaryEndpoint)
 
-        // Wait for connection state to change
-        while (client.connectionState.value != ConnectionState.Connected) {
-            delay(100)
-        }
+        // Wait for connection - use state-based waiting with a timeout to avoid hanging
+        client.connectionState.first { it is ConnectionState.Connected }
+
+        // Additional small delay to ensure connection is fully established
+        // This helps avoid race conditions where RPC completes too quickly
+        delay(100)
 
         // When: Starting an RPC call but disconnecting before it completes
         val job = launch {

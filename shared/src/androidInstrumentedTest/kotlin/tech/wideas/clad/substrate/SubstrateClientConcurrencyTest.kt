@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
@@ -42,7 +43,7 @@ class SubstrateClientConcurrencyTest {
             dispatcher = Dispatchers.IO
         )
         client.connect(endpoint)
-        delay(2000) // Wait for connection
+        client.connectionState.first { it is ConnectionState.Connected }
     }
 
     @After
@@ -206,9 +207,12 @@ class SubstrateClientConcurrencyTest {
         // Then: Valid calls succeed, invalid calls fail
         assertEquals(3, results.size)
 
-        assertTrue(results[0].isSuccess)
-        assertTrue(results[1].isFailure) // Invalid method
-        assertTrue(results[2].isSuccess)
+        // Check counts instead of assuming order (concurrent execution order is not guaranteed)
+        val successCount = results.count { it.isSuccess }
+        val failureCount = results.count { it.isFailure }
+
+        assertEquals(2, successCount, "Expected 2 successful calls")
+        assertEquals(1, failureCount, "Expected 1 failed call")
     }
 
     // ============================================

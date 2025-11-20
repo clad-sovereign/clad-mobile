@@ -3,6 +3,7 @@ package tech.wideas.clad.substrate
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -39,7 +40,7 @@ class SubstrateClientRpcTest {
             dispatcher = Dispatchers.IO
         )
         client.connect(endpoint)
-        delay(2000) // Wait for connection
+        client.connectionState.first { it is ConnectionState.Connected }
     }
 
     @After
@@ -312,7 +313,7 @@ class SubstrateClientRpcTest {
     fun testRpcCallAfterMetadataFetch(): Unit = runBlocking {
         // Given: Metadata has been fetched
         client.fetchMetadata()
-        delay(1000)
+        client.metadata.first { it != null }
 
         // When: Making another RPC call
         val result = client.call("system_chain")

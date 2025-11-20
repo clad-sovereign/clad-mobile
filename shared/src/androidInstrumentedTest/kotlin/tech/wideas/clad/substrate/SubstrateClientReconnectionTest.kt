@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Test
@@ -257,7 +258,7 @@ class SubstrateClientReconnectionTest {
 
         // Disconnect and reconnect with valid endpoint
         client.disconnect()
-        delay(100) // Ensure disconnect completes
+        client.connectionState.first { it is ConnectionState.Disconnected }
 
         client.connectionState.test {
             skipItems(1) // Skip current state
