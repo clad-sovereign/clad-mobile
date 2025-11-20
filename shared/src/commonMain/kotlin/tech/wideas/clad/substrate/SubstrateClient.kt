@@ -173,6 +173,15 @@ class SubstrateClient(
         reconnectJob?.cancel()
         reconnectJob = null
         currentEndpoint = null
+
+        // Cancel all pending requests
+        pendingRequestsMutex.withLock {
+            pendingRequests.values.forEach {
+                it.completeExceptionally(SubstrateException("Client disconnected"))
+            }
+            pendingRequests.clear()
+        }
+
         session?.close()
         session = null
         _connectionState.value = ConnectionState.Disconnected

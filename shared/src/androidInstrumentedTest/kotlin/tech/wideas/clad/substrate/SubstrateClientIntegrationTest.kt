@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import org.junit.After
@@ -11,6 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -203,5 +205,37 @@ class SubstrateClientIntegrationTest {
         // Then: Metadata is cleared
         val metadata = client.metadata.value
         assertEquals(null, metadata)
+    }
+
+    @Test
+    fun testPendingRequestsCleanedUpOnDisconnect(): Unit = runBlocking {
+        // Given: A connected client
+        client.connect(primaryEndpoint)
+
+        // Wait for connection state to change
+        while (client.connectionState.value != ConnectionState.Connected) {
+            delay(100)
+        }
+
+        // When: Starting an RPC call but disconnecting before it completes
+        val job = launch {
+            val exception = assertFailsWith<SubstrateException> {
+                // This call will be interrupted by disconnect
+                client.call("state_getMetadata", timeoutMs = 60000)
+            }
+            assertEquals("Client disconnected", exception.message)
+        }
+
+        // Give the RPC call time to be sent
+        delay(100)
+
+        // Disconnect while the request is pending
+        client.disconnect()
+
+        // Wait for the job to complete with exception
+        job.join()
+
+        // Then: The pending request should have been cancelled with appropriate exception
+        // If we get here without hanging, it means pending requests were properly cleaned up
     }
 }
