@@ -20,6 +20,7 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.fragment.ktx)
+            implementation(libs.kermit)
         }
         commonMain.dependencies {
             implementation(compose.runtime)

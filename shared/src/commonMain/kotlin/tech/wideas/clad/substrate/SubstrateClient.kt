@@ -1,5 +1,6 @@
 package tech.wideas.clad.substrate
 
+import co.touchlab.kermit.Logger
 import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.websocket.*
@@ -58,6 +59,7 @@ class SubstrateClient(
     private val maxReconnectAttempts: Int = 5,
     dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
+    private val logger = Logger.withTag("SubstrateClient")
     private var scope: CoroutineScope = CoroutineScope(dispatcher + SupervisorJob())
     private val client = HttpClient {
         install(WebSockets)
@@ -243,7 +245,7 @@ class SubstrateClient(
             _metadata.value = result?.jsonPrimitive?.content
         } catch (e: Exception) {
             // Metadata fetch failed, but don't disconnect
-            println("Failed to fetch metadata: ${e.message}")
+            logger.e(e) { "Failed to fetch metadata: ${e.message}" }
         }
     }
 
@@ -289,14 +291,14 @@ class SubstrateClient(
                                 deferred.complete(response)
                             } else {
                                 // Response for unknown request ID (might be a subscription or duplicate)
-                                println("Received response for unknown request ID: $id")
+                                logger.w { "Received response for unknown request ID: $id" }
                             }
                         } else {
                             // Response without ID (might be a notification)
-                            println("Received response without ID: $text")
+                            logger.d { "Received response without ID: $text" }
                         }
                     } catch (e: Exception) {
-                        println("Failed to parse response: $text")
+                        logger.w(e) { "Failed to parse response: $text" }
                     }
                 }
             }
