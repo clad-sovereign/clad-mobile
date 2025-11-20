@@ -5,7 +5,11 @@ import Shared
 struct iOSApp: App {
     init() {
         // Configure Kermit logger for iOS
-        KermitLogger().initialize()
+        #if DEBUG
+        KermitLogger.Companion.shared.initialize(isDebug: true)
+        #else
+        KermitLogger.Companion.shared.initialize(isDebug: false)
+        #endif
     }
 
     var body: some Scene {
