@@ -20,6 +20,7 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.fragment.ktx)
+            implementation(libs.kermit)
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -53,6 +54,9 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+    }
+    buildFeatures {
+        buildConfig = true
     }
     packaging {
         resources {
