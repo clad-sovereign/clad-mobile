@@ -40,7 +40,7 @@ class SubstrateClientRpcTest {
             dispatcher = Dispatchers.IO
         )
         client.connect(endpoint)
-        client.connectionState.first { it is ConnectionState.Connected }
+        client.waitForConnection()
     }
 
     @After
@@ -313,7 +313,7 @@ class SubstrateClientRpcTest {
     fun testRpcCallAfterMetadataFetch(): Unit = runBlocking {
         // Given: Metadata has been fetched
         client.fetchMetadata()
-        client.metadata.first { it != null }
+        client.waitForMetadata()
 
         // When: Making another RPC call
         val result = client.call("system_chain")

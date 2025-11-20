@@ -258,7 +258,7 @@ class SubstrateClientReconnectionTest {
 
         // Disconnect and reconnect with valid endpoint
         client.disconnect()
-        client.connectionState.first { it is ConnectionState.Disconnected }
+        client.waitForDisconnection()
 
         client.connectionState.test {
             skipItems(1) // Skip current state

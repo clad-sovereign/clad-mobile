@@ -125,7 +125,7 @@ class SubstrateClientIntegrationTest {
     fun testDisconnectFromConnectedNode() = runBlocking {
         // Given: A connected client
         client.connect(primaryEndpoint)
-        client.connectionState.first { it is ConnectionState.Connected }
+        client.waitForConnection()
 
         client.connectionState.test {
             skipItems(1) // Skip current state
@@ -143,7 +143,7 @@ class SubstrateClientIntegrationTest {
     fun testAlreadyConnectedDoesNotReconnect() = runBlocking {
         // Given: A connected client
         client.connect(primaryEndpoint)
-        client.connectionState.first { it is ConnectionState.Connected }
+        client.waitForConnection()
 
         client.connectionState.test {
             val initialState = awaitItem()
@@ -184,8 +184,8 @@ class SubstrateClientIntegrationTest {
         client.connect(primaryEndpoint)
 
         // Wait for connection and metadata fetch
-        client.connectionState.first { it is ConnectionState.Connected }
-        client.metadata.first { it != null }
+        client.waitForConnection()
+        client.waitForMetadata()
 
         // Then: Metadata should be populated
         val metadata = client.metadata.value
@@ -198,8 +198,8 @@ class SubstrateClientIntegrationTest {
     fun testMetadataClearedOnDisconnect(): Unit = runBlocking {
         // Given: A connected client with metadata
         client.connect(primaryEndpoint)
-        client.connectionState.first { it is ConnectionState.Connected }
-        client.metadata.first { it != null }
+        client.waitForConnection()
+        client.waitForMetadata()
 
         // Verify metadata is present
         assertNotNull(client.metadata.value)
@@ -218,15 +218,21 @@ class SubstrateClientIntegrationTest {
         client.connect(primaryEndpoint)
 
         // Wait for connection - use state-based waiting
-        client.connectionState.first { it is ConnectionState.Connected }
+        client.waitForConnection()
 
-        // Signal to coordinate test timing
+        // Use CompletableDeferred to coordinate timing between coroutines.
+        // This ensures the disconnect happens AFTER the RPC call has started but BEFORE it completes.
+        // Thread-safe coordination flow:
+        // 1. Main coroutine waits on callStarted.await()
+        // 2. Job coroutine calls callStarted.complete() before making RPC call
+        // 3. Main coroutine proceeds to disconnect, interrupting the pending RPC call
         val callStarted = CompletableDeferred<Unit>()
 
         // When: Starting an RPC call but disconnecting before it completes
-        val job = launch(Dispatchers.IO) {
+        val job = launch {
             val exception = assertFailsWith<SubstrateException> {
-                callStarted.complete(Unit) // Signal that call is about to be made
+                // Signal that call is about to be made (happens-before the actual call)
+                callStarted.complete(Unit)
                 // This call will be interrupted by disconnect
                 client.call("state_getMetadata", timeoutMs = 60000)
             }
@@ -234,7 +240,9 @@ class SubstrateClientIntegrationTest {
         }
 
         // Wait for the RPC call to start, then disconnect
-        withTimeout(1000) {
+        // Note: Using withTimeout as a safety bound for event-driven waiting,
+        // not as an arbitrary delay. We wait for the callStarted signal with a maximum wait time.
+        withTimeout(TEST_STATE_TRANSITION_TIMEOUT_MS) {
             callStarted.await()
         }
 

@@ -43,7 +43,7 @@ class SubstrateClientConcurrencyTest {
             dispatcher = Dispatchers.IO
         )
         client.connect(endpoint)
-        client.connectionState.first { it is ConnectionState.Connected }
+        client.waitForConnection()
     }
 
     @After
