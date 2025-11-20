@@ -11,6 +11,8 @@ import tech.wideas.clad.data.SettingsRepository
 import tech.wideas.clad.getPlatform
 import tech.wideas.clad.substrate.ConnectionState
 import tech.wideas.clad.substrate.SubstrateClient
+import tech.wideas.clad.security.BiometricAuth
+import tech.wideas.clad.security.BiometricResult
 
 /**
  * iOS-specific ConnectionViewModel
@@ -20,12 +22,15 @@ data class ConnectionUiState(
     val endpoint: String = "",
     val connectionState: ConnectionState = ConnectionState.Disconnected,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isAuthenticating: Boolean = false,
+    val authenticationRequired: Boolean = true // Require auth before connection
 )
 
 class ConnectionViewModelIOS(
     private val substrateClient: SubstrateClient,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val biometricAuth: BiometricAuth
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -89,6 +94,60 @@ class ConnectionViewModelIOS(
         _uiState.value = _uiState.value.copy(endpoint = endpoint, error = null)
     }
 
+    /**
+     * Authenticate user and connect to node
+     */
+    fun authenticateAndConnect() {
+        val endpoint = _uiState.value.endpoint.trim()
+
+        // Validate endpoint format
+        val validationError = validateEndpoint(endpoint)
+        if (validationError != null) {
+            _uiState.value = _uiState.value.copy(error = validationError)
+            return
+        }
+
+        scope.launch {
+            // Trigger biometric authentication
+            _uiState.value = _uiState.value.copy(isAuthenticating = true, error = null)
+
+            val authResult = biometricAuth.authenticate(
+                title = "Authenticate to Connect",
+                subtitle = "CLAD Signer",
+                description = "Verify your identity to connect to the blockchain node"
+            )
+
+            when (authResult) {
+                is BiometricResult.Success -> {
+                    // Authentication succeeded, proceed with connection
+                    connectToNode(endpoint)
+                }
+                is BiometricResult.Cancelled -> {
+                    _uiState.value = _uiState.value.copy(
+                        isAuthenticating = false,
+                        error = null // Don't show error for user cancellation
+                    )
+                }
+                is BiometricResult.NotAvailable -> {
+                    _uiState.value = _uiState.value.copy(
+                        isAuthenticating = false,
+                        error = "Biometric authentication is not available on this device"
+                    )
+                }
+                is BiometricResult.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isAuthenticating = false,
+                        error = "Authentication failed: ${authResult.message}"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Legacy connect method (kept for backwards compatibility)
+     * Connects without biometric authentication
+     */
     fun connect() {
         val endpoint = _uiState.value.endpoint.trim()
 
@@ -100,16 +159,25 @@ class ConnectionViewModelIOS(
         }
 
         scope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-                settingsRepository.saveRpcEndpoint(endpoint)
-                substrateClient.connect(endpoint)
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Connection failed"
-                )
-            }
+            connectToNode(endpoint)
+        }
+    }
+
+    private suspend fun connectToNode(endpoint: String) {
+        try {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                isAuthenticating = false,
+                error = null
+            )
+            settingsRepository.saveRpcEndpoint(endpoint)
+            substrateClient.connect(endpoint)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                isAuthenticating = false,
+                error = e.message ?: "Connection failed"
+            )
         }
     }
 

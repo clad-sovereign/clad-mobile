@@ -42,8 +42,8 @@ struct ConnectionView: View {
                         .autocapitalization(.none)
                         .autocorrectionDisabled()
                         .disabled(viewModel.isLoading)
-                        .onChange(of: viewModel.endpoint) { newValue in
-                            viewModel.onEndpointChanged(newValue)
+                        .onChange(of: viewModel.endpoint) {
+                            viewModel.onEndpointChanged(viewModel.endpoint)
                         }
 
                     if let error = viewModel.error {
@@ -58,7 +58,7 @@ struct ConnectionView: View {
 
                 // Single button that shows loading state via text and disabled state
                 Button(action: {
-                    viewModel.connect()
+                    viewModel.authenticateAndConnect()
                 }) {
                     Text(viewModel.buttonText)
                         .font(CladTypography.bodyLarge)
@@ -84,8 +84,8 @@ struct ConnectionView: View {
             .frame(maxHeight: .infinity)
             .padding(.horizontal)
         }
-        .onChange(of: viewModel.isConnected) { connected in
-            if connected {
+        .onChange(of: viewModel.isConnected) {
+            if viewModel.isConnected {
                 isConnected = true
             }
         }
@@ -100,6 +100,7 @@ class ConnectionViewModelWrapper: ObservableObject {
     @Published var endpoint: String = ""
     @Published var connectionState: String = "disconnected"
     @Published var isLoading: Bool = false
+    @Published var isAuthenticating: Bool = false
     @Published var error: String? = nil
 
     var isConnecting: Bool {
@@ -115,7 +116,9 @@ class ConnectionViewModelWrapper: ObservableObject {
     }
 
     var buttonText: String {
-        if connectionState == "connecting" || connectionState == "connected" {
+        if isAuthenticating {
+            return "Authenticating..."
+        } else if connectionState == "connecting" || connectionState == "connected" {
             return "Connecting..."
         } else if hasError {
             return "Retry Connection"
@@ -125,7 +128,7 @@ class ConnectionViewModelWrapper: ObservableObject {
     }
 
     var isButtonEnabled: Bool {
-        connectionState != "connecting" && connectionState != "connected"
+        connectionState != "connecting" && connectionState != "connected" && !isAuthenticating
     }
 
     init(viewModel: ConnectionViewModelIOS) {
@@ -141,6 +144,7 @@ class ConnectionViewModelWrapper: ObservableObject {
                 await MainActor.run {
                     self.endpoint = state.endpoint
                     self.isLoading = state.isLoading
+                    self.isAuthenticating = state.isAuthenticating
                     self.error = state.error
 
                     // Map ConnectionState to string for easier handling
@@ -160,6 +164,10 @@ class ConnectionViewModelWrapper: ObservableObject {
 
     func onEndpointChanged(_ newEndpoint: String) {
         viewModel.onEndpointChanged(endpoint: newEndpoint)
+    }
+
+    func authenticateAndConnect() {
+        viewModel.authenticateAndConnect()
     }
 
     func connect() {

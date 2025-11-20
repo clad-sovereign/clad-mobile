@@ -1,11 +1,22 @@
 package tech.wideas.clad.di
 
 import org.koin.dsl.module
+import tech.wideas.clad.security.BiometricAuth
+import tech.wideas.clad.security.IOSBiometricAuth
+import tech.wideas.clad.security.IOSSecureStorage
+import tech.wideas.clad.security.SecureStorage
 
 /**
  * iOS-specific Koin module
- * TODO: Implement iOS-specific dependencies when needed
  */
 actual val platformModule = module {
-    // iOS implementations will be added here
+    // SecureStorage
+    single<SecureStorage> {
+        IOSSecureStorage()
+    }
+
+    // BiometricAuth
+    single<BiometricAuth> {
+        IOSBiometricAuth()
+    }
 }

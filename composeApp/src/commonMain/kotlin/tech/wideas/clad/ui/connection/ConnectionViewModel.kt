@@ -15,7 +15,9 @@ data class ConnectionUiState(
     val endpoint: String = "",
     val connectionState: ConnectionState = ConnectionState.Disconnected,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isAuthenticating: Boolean = false,
+    val authenticationRequired: Boolean = true // Require auth before connection
 )
 
 class ConnectionViewModel(
@@ -55,6 +57,59 @@ class ConnectionViewModel(
         _uiState.value = _uiState.value.copy(endpoint = endpoint, error = null)
     }
 
+    /**
+     * Authenticate user and connect to node
+     * This method should be called with a BiometricAuthHandler
+     */
+    suspend fun authenticateAndConnect(authHandler: BiometricAuthHandler) {
+        val endpoint = _uiState.value.endpoint.trim()
+
+        // Validate endpoint format
+        val validationError = validateEndpoint(endpoint)
+        if (validationError != null) {
+            _uiState.value = _uiState.value.copy(error = validationError)
+            return
+        }
+
+        // Trigger biometric authentication
+        _uiState.value = _uiState.value.copy(isAuthenticating = true, error = null)
+
+        val authResult = authHandler.authenticate(
+            title = "Authenticate to Connect",
+            subtitle = "CLAD Signer",
+            description = "Verify your identity to connect to the blockchain node"
+        )
+
+        when (authResult) {
+            is tech.wideas.clad.security.BiometricResult.Success -> {
+                // Authentication succeeded, proceed with connection
+                connectToNode(endpoint)
+            }
+            is tech.wideas.clad.security.BiometricResult.Cancelled -> {
+                _uiState.value = _uiState.value.copy(
+                    isAuthenticating = false,
+                    error = null // Don't show error for user cancellation
+                )
+            }
+            is tech.wideas.clad.security.BiometricResult.NotAvailable -> {
+                _uiState.value = _uiState.value.copy(
+                    isAuthenticating = false,
+                    error = "Biometric authentication is not available on this device"
+                )
+            }
+            is tech.wideas.clad.security.BiometricResult.Error -> {
+                _uiState.value = _uiState.value.copy(
+                    isAuthenticating = false,
+                    error = "Authentication failed: ${authResult.message}"
+                )
+            }
+        }
+    }
+
+    /**
+     * Legacy connect method (kept for backwards compatibility)
+     * Connects without biometric authentication
+     */
     fun connect() {
         val endpoint = _uiState.value.endpoint.trim()
 
@@ -66,16 +121,25 @@ class ConnectionViewModel(
         }
 
         viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-                settingsRepository.saveRpcEndpoint(endpoint)
-                substrateClient.connect(endpoint)
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = e.message ?: "Connection failed"
-                )
-            }
+            connectToNode(endpoint)
+        }
+    }
+
+    private suspend fun connectToNode(endpoint: String) {
+        try {
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                isAuthenticating = false,
+                error = null
+            )
+            settingsRepository.saveRpcEndpoint(endpoint)
+            substrateClient.connect(endpoint)
+        } catch (e: Exception) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                isAuthenticating = false,
+                error = e.message ?: "Connection failed"
+            )
         }
     }
 
