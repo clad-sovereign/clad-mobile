@@ -5,10 +5,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import tech.wideas.clad.substrate.ConnectionState
 
 @Composable
@@ -16,6 +18,8 @@ fun ConnectionScreen(
     viewModel: ConnectionViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val authHandler = rememberBiometricAuthHandler()
+    val scope = rememberCoroutineScope()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -68,18 +72,24 @@ fun ConnectionScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Single button that shows loading state via text and disabled state
-            val buttonText = when (val state = uiState.connectionState) {
-                is ConnectionState.Connecting -> "Connecting..."
-                is ConnectionState.Connected -> "Connecting..."
-                is ConnectionState.Error -> "Retry Connection"
+            val buttonText = when {
+                uiState.isAuthenticating -> "Authenticating..."
+                uiState.connectionState is ConnectionState.Connecting -> "Connecting..."
+                uiState.connectionState is ConnectionState.Connected -> "Connecting..."
+                uiState.connectionState is ConnectionState.Error -> "Retry Connection"
                 else -> "Connect to Node"
             }
 
             Button(
-                onClick = viewModel::connect,
+                onClick = {
+                    scope.launch {
+                        viewModel.authenticateAndConnect(authHandler)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = uiState.connectionState !is ConnectionState.Connecting &&
-                         uiState.connectionState !is ConnectionState.Connected
+                         uiState.connectionState !is ConnectionState.Connected &&
+                         !uiState.isAuthenticating
             ) {
                 Text(buttonText)
             }

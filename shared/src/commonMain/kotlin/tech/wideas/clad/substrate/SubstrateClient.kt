@@ -271,6 +271,17 @@ class SubstrateClient(
     }
 
     /**
+     * Wait for the client to reach a disconnected state
+     * Useful in tests to ensure clean state transitions
+     */
+    suspend fun waitForDisconnection() {
+        // Wait for the connection state to be Disconnected
+        while (_connectionState.value !is ConnectionState.Disconnected) {
+            delay(50)
+        }
+    }
+
+    /**
      * Make an RPC call with timeout
      */
     suspend fun call(

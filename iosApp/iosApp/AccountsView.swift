@@ -1,6 +1,5 @@
 import SwiftUI
 import Shared
-import Combine
 
 struct AccountsView: View {
     @ObservedObject var viewModel: AccountsViewModelWrapper
@@ -93,7 +92,7 @@ struct AccountsView: View {
                                     .background(colors.background)
                                     .cornerRadius(8)
                                     .frame(height: 125)
-                                    .onChange(of: viewModel.messages.count) { _ in
+                                    .onChange(of: viewModel.messages.count) {
                                         // Auto-scroll to bottom when new messages arrive
                                         if let lastMessage = messages.last {
                                             withAnimation {

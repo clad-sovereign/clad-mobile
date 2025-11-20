@@ -14,7 +14,8 @@ class ViewModelHelper : KoinComponent {
     fun getConnectionViewModel(): ConnectionViewModelIOS {
         return ConnectionViewModelIOS(
             substrateClient = get(),
-            settingsRepository = get()
+            settingsRepository = get(),
+            biometricAuth = get()
         )
     }
 
