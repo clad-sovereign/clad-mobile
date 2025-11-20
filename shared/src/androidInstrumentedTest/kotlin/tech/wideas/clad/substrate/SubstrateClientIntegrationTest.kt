@@ -204,4 +204,34 @@ class SubstrateClientIntegrationTest {
         val metadata = client.metadata.value
         assertEquals(null, metadata)
     }
+
+    @Test
+    fun testPendingRequestsCleanedUpOnDisconnect(): Unit = runBlocking {
+        // Given: A connected client
+        client.connect(primaryEndpoint)
+        delay(2000) // Wait for connection
+
+        // When: Starting multiple RPC calls but disconnecting before they complete
+        val job = kotlinx.coroutines.launch {
+            try {
+                // This call will be interrupted by disconnect
+                client.call("state_getMetadata", timeoutMs = 60000)
+            } catch (e: SubstrateException) {
+                // Expected: Should get "Client disconnected" exception
+                assertEquals("Client disconnected", e.message)
+            }
+        }
+
+        // Give the RPC call time to be sent
+        delay(100)
+
+        // Disconnect while the request is pending
+        client.disconnect()
+
+        // Wait for the job to complete with exception
+        job.join()
+
+        // Then: The pending request should have been cancelled with appropriate exception
+        // If we get here without hanging, it means pending requests were properly cleaned up
+    }
 }
