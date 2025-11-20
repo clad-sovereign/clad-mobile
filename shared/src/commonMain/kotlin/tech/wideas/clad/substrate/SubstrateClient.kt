@@ -6,10 +6,11 @@ import io.ktor.client.plugins.websocket.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 
@@ -47,15 +48,17 @@ data class RpcResponse(
  *
  * @param autoReconnect Enable automatic reconnection on connection loss
  * @param maxReconnectAttempts Maximum number of reconnection attempts
+ * @param dispatcher The coroutine dispatcher to use (defaults to Dispatchers.Default)
  *
  * Note: This client should be scoped to a ViewModel's lifecycle to ensure
  * proper coroutine cancellation. The internal scope will be created automatically.
  */
 class SubstrateClient(
     private val autoReconnect: Boolean = true,
-    private val maxReconnectAttempts: Int = 5
+    private val maxReconnectAttempts: Int = 5,
+    dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    private var scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private var scope: CoroutineScope = CoroutineScope(dispatcher + SupervisorJob())
     private val client = HttpClient {
         install(WebSockets)
         install(ContentNegotiation) {
@@ -69,11 +72,13 @@ class SubstrateClient(
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
+        encodeDefaults = true
     }
 
     private var session: DefaultClientWebSocketSession? = null
     private var requestId = 0
-    private val responseChannel = Channel<RpcResponse>(64) // Bounded buffer to prevent memory leaks
+    private val pendingRequests = mutableMapOf<Int, CompletableDeferred<RpcResponse>>()
+    private val pendingRequestsMutex = Mutex()
 
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
@@ -188,25 +193,35 @@ class SubstrateClient(
         val request = RpcRequest(id = id, method = method, params = params)
         val requestJson = json.encodeToString(RpcRequest.serializer(), request)
 
-        currentSession.send(Frame.Text(requestJson))
+        // Create a deferred result for this specific request
+        val deferred = CompletableDeferred<RpcResponse>()
+        pendingRequestsMutex.withLock {
+            pendingRequests[id] = deferred
+        }
 
-        // Wait for response with matching ID, with timeout
-        return try {
-            withTimeout(timeoutMs) {
-                while (true) {
-                    val response = responseChannel.receive()
-                    if (response.id == id) {
-                        if (response.error != null) {
-                            throw SubstrateException("RPC error: ${response.error}")
-                        }
-                        return@withTimeout response.result
-                    }
+        try {
+            currentSession.send(Frame.Text(requestJson))
+
+            // Wait for response with timeout
+            val response = try {
+                withTimeout(timeoutMs) {
+                    deferred.await()
                 }
-                @Suppress("UNREACHABLE_CODE")
-                null // This line is unreachable but satisfies the type checker
+            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                throw SubstrateException("RPC call timeout after ${timeoutMs}ms")
             }
-        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-            throw SubstrateException("RPC call timeout after ${timeoutMs}ms")
+
+            // Check for RPC errors
+            if (response.error != null) {
+                throw SubstrateException("RPC error: ${response.error}")
+            }
+
+            return response.result
+        } finally {
+            // Clean up the pending request
+            pendingRequestsMutex.withLock {
+                pendingRequests.remove(id)
+            }
         }
     }
 
@@ -255,7 +270,22 @@ class SubstrateClient(
                     val text = frame.readText()
                     try {
                         val response = json.decodeFromString<RpcResponse>(text)
-                        responseChannel.send(response)
+                        // Complete the deferred corresponding to this response ID
+                        val id = response.id
+                        if (id != null) {
+                            val deferred = pendingRequestsMutex.withLock {
+                                pendingRequests[id]
+                            }
+                            if (deferred != null) {
+                                deferred.complete(response)
+                            } else {
+                                // Response for unknown request ID (might be a subscription or duplicate)
+                                println("Received response for unknown request ID: $id")
+                            }
+                        } else {
+                            // Response without ID (might be a notification)
+                            println("Received response without ID: $text")
+                        }
                     } catch (e: Exception) {
                         println("Failed to parse response: $text")
                     }
