@@ -1,11 +1,12 @@
 package tech.wideas.clad.substrate
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -17,7 +18,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Integration tests for SubstrateClient concurrent operations.
@@ -35,14 +35,18 @@ class SubstrateClientConcurrencyTest {
     private val endpoint = "ws://localhost:9944"  // Use 10.0.2.2 to reach host from Android emulator
 
     @Before
-    fun setup() = runTest(timeout = 30.seconds) {
-        client = SubstrateClient(autoReconnect = false)
+    fun setup() = runBlocking {
+        // Use Dispatchers.IO for real WebSocket I/O operations
+        client = SubstrateClient(
+            autoReconnect = false,
+            dispatcher = Dispatchers.IO
+        )
         client.connect(endpoint)
         delay(2000) // Wait for connection
     }
 
     @After
-    fun teardown() = runTest {
+    fun teardown() = runBlocking {
         client.disconnect()
         client.close()
     }
@@ -52,7 +56,7 @@ class SubstrateClientConcurrencyTest {
     // ============================================
 
     @Test
-    fun testTwoConcurrentRpcCalls() = runTest(timeout = 30.seconds) {
+    fun testTwoConcurrentRpcCalls() = runBlocking {
         // When: Making two concurrent RPC calls
         val deferred1 = async { client.call("system_chain") }
         val deferred2 = async { client.call("system_name") }
@@ -69,7 +73,7 @@ class SubstrateClientConcurrencyTest {
     }
 
     @Test
-    fun testMultipleConcurrentRpcCalls() = runTest(timeout = 30.seconds) {
+    fun testMultipleConcurrentRpcCalls() = runBlocking {
         // When: Making multiple concurrent RPC calls
         val deferredCalls = listOf(
             async { client.call("system_chain") },
@@ -96,7 +100,7 @@ class SubstrateClientConcurrencyTest {
     }
 
     @Test
-    fun testTenConcurrentRpcCalls() = runTest(timeout = 30.seconds) {
+    fun testTenConcurrentRpcCalls() = runBlocking {
         // When: Making 10 concurrent calls to test channel buffer handling
         val deferredCalls = (1..10).map { index ->
             async {
@@ -120,7 +124,7 @@ class SubstrateClientConcurrencyTest {
     }
 
     @Test
-    fun testConcurrentCallsWithDifferentParams() = runTest(timeout = 30.seconds) {
+    fun testConcurrentCallsWithDifferentParams() = runBlocking {
         // When: Making concurrent calls with different parameters
         val deferredCalls = listOf(
             async {
@@ -160,7 +164,7 @@ class SubstrateClientConcurrencyTest {
     // ============================================
 
     @Test
-    fun testResponseMatchingWithConcurrentCalls() = runTest(timeout = 30.seconds) {
+    fun testResponseMatchingWithConcurrentCalls() = runBlocking {
         // When: Making concurrent calls that return different values
         val chainDeferred = async { client.call("system_chain") }
         val nameDeferred = async { client.call("system_name") }
@@ -181,7 +185,7 @@ class SubstrateClientConcurrencyTest {
     }
 
     @Test
-    fun testConcurrentCallsWithMixedSuccessAndFailure() = runTest(timeout = 30.seconds) {
+    fun testConcurrentCallsWithMixedSuccessAndFailure() = runBlocking {
         // When: Making concurrent calls where some fail
         val results = mutableListOf<Result<Any?>>()
 
@@ -212,7 +216,7 @@ class SubstrateClientConcurrencyTest {
     // ============================================
 
     @Test
-    fun testChannelBufferUnderLoad() = runTest(timeout = 60.seconds) {
+    fun testChannelBufferUnderLoad() = runBlocking {
         // When: Making many concurrent calls to test channel buffer (64 capacity)
         val callCount = 50
         val deferredCalls = (1..callCount).map {
@@ -232,7 +236,7 @@ class SubstrateClientConcurrencyTest {
     }
 
     @Test
-    fun testHighFrequencySequentialCalls() = runTest(timeout = 30.seconds) {
+    fun testHighFrequencySequentialCalls() = runBlocking {
         // When: Making rapid sequential calls
         val results = mutableListOf<Any?>()
 
@@ -253,7 +257,7 @@ class SubstrateClientConcurrencyTest {
     // ============================================
 
     @Test
-    fun testConcurrentCallsFromMultipleCoroutines() = runTest(timeout = 60.seconds) {
+    fun testConcurrentCallsFromMultipleCoroutines() = runBlocking {
         // When: Multiple coroutines each making multiple calls
         val jobs = (1..5).map { coroutineId ->
             async {
@@ -279,7 +283,7 @@ class SubstrateClientConcurrencyTest {
     }
 
     @Test
-    fun testInterleavedSequentialAndConcurrentCalls() = runTest(timeout = 30.seconds) {
+    fun testInterleavedSequentialAndConcurrentCalls() = runBlocking {
         // When: Mixing sequential and concurrent call patterns
         // Sequential call 1
         val result1 = client.call("system_chain")
@@ -313,7 +317,7 @@ class SubstrateClientConcurrencyTest {
     // ============================================
 
     @Test
-    fun testConcurrentCallsWithIndividualTimeouts() = runTest(timeout = 30.seconds) {
+    fun testConcurrentCallsWithIndividualTimeouts() = runBlocking {
         // When: Making concurrent calls with different timeout values
         val deferredCalls = listOf(
             async { client.call("system_chain", timeoutMs = 10000) },
@@ -332,7 +336,7 @@ class SubstrateClientConcurrencyTest {
     }
 
     @Test
-    fun testConcurrentCallsWithOneTimeout() = runTest(timeout = 30.seconds) {
+    fun testConcurrentCallsWithOneTimeout() = runBlocking {
         // When: Making concurrent calls where one has very short timeout
         val results = mutableListOf<Result<Any?>>()
 
@@ -371,7 +375,7 @@ class SubstrateClientConcurrencyTest {
     // ============================================
 
     @Test
-    fun testConcurrentCallsWithLargeResponses() = runTest(timeout = 30.seconds) {
+    fun testConcurrentCallsWithLargeResponses() = runBlocking {
         // When: Making concurrent calls that return large payloads
         val deferredCalls = listOf(
             async { client.call("state_getMetadata") },      // Large response

@@ -3,13 +3,12 @@ package tech.wideas.clad.substrate
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Integration tests for SubstrateClient reconnection behavior.
@@ -28,7 +27,7 @@ class SubstrateClientReconnectionTest {
     private lateinit var client: SubstrateClient
 
     @After
-    fun teardown() = runTest {
+    fun teardown() = runBlocking {
         client.disconnect()
         client.close()
     }
@@ -38,7 +37,7 @@ class SubstrateClientReconnectionTest {
     // ============================================
 
     @Test
-    fun testNoReconnectWhenDisabled() = runTest(timeout = 30.seconds) {
+    fun testNoReconnectWhenDisabled() = runBlocking {
         // Given: Client with auto-reconnect disabled
         client = SubstrateClient(autoReconnect = false)
 
@@ -65,7 +64,7 @@ class SubstrateClientReconnectionTest {
     // ============================================
 
     @Test
-    fun testReconnectOnConnectionFailure() = runTest(timeout = 60.seconds) {
+    fun testReconnectOnConnectionFailure() = runBlocking {
         // Given: Client with auto-reconnect enabled
         client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 3)
 
@@ -101,7 +100,7 @@ class SubstrateClientReconnectionTest {
     }
 
     @Test
-    fun testMaxReconnectAttemptsLimit() = runTest(timeout = 60.seconds) {
+    fun testMaxReconnectAttemptsLimit() = runBlocking {
         // Given: Client with limited reconnect attempts
         client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 2)
 
@@ -140,7 +139,7 @@ class SubstrateClientReconnectionTest {
     }
 
     @Test
-    fun testExponentialBackoffDelay() = runTest(timeout = 60.seconds) {
+    fun testExponentialBackoffDelay() = runBlocking {
         // Given: Client with auto-reconnect
         client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 3)
 
@@ -178,7 +177,7 @@ class SubstrateClientReconnectionTest {
     }
 
     @Test
-    fun testReconnectAttemptsResetOnSuccess() = runTest(timeout = 60.seconds) {
+    fun testReconnectAttemptsResetOnSuccess() = runBlocking {
         // Given: Client with auto-reconnect
         client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 5)
 
@@ -220,7 +219,7 @@ class SubstrateClientReconnectionTest {
     // ============================================
 
     @Test
-    fun testRecoveryAfterNodeBecomesAvailable() = runTest(timeout = 90.seconds) {
+    fun testRecoveryAfterNodeBecomesAvailable() = runBlocking {
         // Given: Client with auto-reconnect attempting to connect to unavailable node
         client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 10)
 
@@ -257,7 +256,7 @@ class SubstrateClientReconnectionTest {
     }
 
     @Test
-    fun testCancelReconnectionOnExplicitDisconnect() = runTest(timeout = 30.seconds) {
+    fun testCancelReconnectionOnExplicitDisconnect() = runBlocking {
         // Given: Client attempting to reconnect to invalid endpoint
         client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 5)
 
@@ -282,7 +281,7 @@ class SubstrateClientReconnectionTest {
     }
 
     @Test
-    fun testReconnectionWithValidEndpoint() = runTest(timeout = 60.seconds) {
+    fun testReconnectionWithValidEndpoint() = runBlocking {
         // This test verifies reconnection behavior when connecting to a valid
         // endpoint that might experience temporary disconnections
 
@@ -314,7 +313,7 @@ class SubstrateClientReconnectionTest {
     // ============================================
 
     @Test
-    fun testZeroMaxReconnectAttempts() = runTest(timeout = 30.seconds) {
+    fun testZeroMaxReconnectAttempts() = runBlocking {
         // Given: Client with zero max reconnect attempts
         client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 0)
 
@@ -334,7 +333,7 @@ class SubstrateClientReconnectionTest {
     }
 
     @Test
-    fun testHighMaxReconnectAttempts() = runTest(timeout = 60.seconds) {
+    fun testHighMaxReconnectAttempts() = runBlocking {
         // Given: Client with high max reconnect attempts
         client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 100)
 

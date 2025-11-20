@@ -47,15 +47,17 @@ data class RpcResponse(
  *
  * @param autoReconnect Enable automatic reconnection on connection loss
  * @param maxReconnectAttempts Maximum number of reconnection attempts
+ * @param dispatcher The coroutine dispatcher to use (defaults to Dispatchers.Default)
  *
  * Note: This client should be scoped to a ViewModel's lifecycle to ensure
  * proper coroutine cancellation. The internal scope will be created automatically.
  */
 class SubstrateClient(
     private val autoReconnect: Boolean = true,
-    private val maxReconnectAttempts: Int = 5
+    private val maxReconnectAttempts: Int = 5,
+    dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    private var scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private var scope: CoroutineScope = CoroutineScope(dispatcher + SupervisorJob())
     private val client = HttpClient {
         install(WebSockets)
         install(ContentNegotiation) {

@@ -2,8 +2,9 @@ package tech.wideas.clad.substrate
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonArray
 import org.junit.After
 import org.junit.Before
@@ -13,7 +14,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Integration tests for SubstrateClient.
@@ -38,11 +38,15 @@ class SubstrateClientIntegrationTest {
 
     @Before
     fun setup() {
-        client = SubstrateClient(autoReconnect = false)
+        // Use Dispatchers.IO for real WebSocket I/O operations
+        client = SubstrateClient(
+            autoReconnect = false,
+            dispatcher = Dispatchers.IO
+        )
     }
 
     @After
-    fun teardown() = runTest {
+    fun teardown() = runBlocking {
         client.disconnect()
         client.close()
     }
@@ -52,7 +56,7 @@ class SubstrateClientIntegrationTest {
     // ============================================
 
     @Test
-    fun testConnectToLocalNode() = runTest(timeout = 30.seconds) {
+    fun testConnectToLocalNode() = runBlocking {
         // Given: A disconnected client
         client.connectionState.test {
             assertIs<ConnectionState.Disconnected>(awaitItem())
@@ -70,7 +74,7 @@ class SubstrateClientIntegrationTest {
     }
 
     @Test
-    fun testConnectionStateTransitions() = runTest(timeout = 30.seconds) {
+    fun testConnectionStateTransitions() = runBlocking {
         val states = mutableListOf<ConnectionState>()
 
         client.connectionState.test {
@@ -92,7 +96,7 @@ class SubstrateClientIntegrationTest {
     }
 
     @Test
-    fun testConnectionTimeout() = runTest(timeout = 30.seconds) {
+    fun testConnectionTimeout() = runBlocking {
         // Given: An invalid endpoint
         val invalidEndpoint = "ws://localhost:9999" // Non-existent port
 
@@ -113,7 +117,7 @@ class SubstrateClientIntegrationTest {
     }
 
     @Test
-    fun testDisconnectFromConnectedNode() = runTest(timeout = 30.seconds) {
+    fun testDisconnectFromConnectedNode() = runBlocking {
         // Given: A connected client
         client.connect(primaryEndpoint)
         delay(2000) // Wait for connection
@@ -131,7 +135,7 @@ class SubstrateClientIntegrationTest {
     }
 
     @Test
-    fun testAlreadyConnectedDoesNotReconnect() = runTest(timeout = 30.seconds) {
+    fun testAlreadyConnectedDoesNotReconnect() = runBlocking {
         // Given: A connected client
         client.connect(primaryEndpoint)
         delay(2000) // Wait for connection
@@ -150,7 +154,7 @@ class SubstrateClientIntegrationTest {
     }
 
     @Test
-    fun testConnectToSecondaryNode() = runTest(timeout = 30.seconds) {
+    fun testConnectToSecondaryNode() = runBlocking {
         // Test connecting to the second node (bob on port 9945)
         client.connectionState.test {
             skipItems(1) // Skip Disconnected
@@ -163,7 +167,7 @@ class SubstrateClientIntegrationTest {
     }
 
     @Test
-    fun testMetadataFetchedAfterConnection() = runTest(timeout = 30.seconds) {
+    fun testMetadataFetchedAfterConnection() = runBlocking {
         // Given: A disconnected client
         client.metadata.test {
             assertEquals(null, awaitItem()) // Initially null
@@ -183,7 +187,7 @@ class SubstrateClientIntegrationTest {
     }
 
     @Test
-    fun testMetadataClearedOnDisconnect() = runTest(timeout = 30.seconds) {
+    fun testMetadataClearedOnDisconnect() = runBlocking {
         // Given: A connected client with metadata
         client.connect(primaryEndpoint)
         delay(3000) // Wait for connection and metadata
