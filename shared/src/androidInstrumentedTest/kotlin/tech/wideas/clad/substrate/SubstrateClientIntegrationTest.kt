@@ -154,9 +154,12 @@ class SubstrateClientIntegrationTest {
     }
 
     @Test
-    @org.junit.Ignore("Requires secondary node on port 9945 - run Alice and Bob nodes for multi-node testing")
     fun testConnectToSecondaryNode() = runBlocking {
         // Test connecting to the second node (bob on port 9945)
+        // Prerequisites:
+        // - Alice node running on ws://localhost:9944
+        // - Bob node running on ws://localhost:9945
+        // - Port forwarding: adb reverse tcp:9944 tcp:9944 && adb reverse tcp:9945 tcp:9945
         client.connectionState.test {
             skipItems(1) // Skip Disconnected
 
