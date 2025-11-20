@@ -166,7 +166,11 @@ class SubstrateClient(
         val endpoint = currentEndpoint ?: return
 
         logger.d { "Attempting to connect to: $endpoint" }
-        _connectionState.value = ConnectionState.Connecting
+        // Only change to Connecting state if this is NOT an auto-reconnect attempt
+        // This prevents UI blinking when reconnection fails repeatedly
+        if (!isAutoReconnecting) {
+            _connectionState.value = ConnectionState.Connecting
+        }
 
         try {
             session = client.webSocketSession(endpoint)
