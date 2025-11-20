@@ -25,14 +25,6 @@ Designed and built as the mobile counterpart to [Clad Studio](https://github.com
 
 Primary jurisdictions (2026 pilots): Indonesia • Kazakhstan • Nigeria • Egypt • Peru • Vietnam • Côte d'Ivoire • Uzbekistan • Rwanda • Paraguay follow-ons
 
-### Development
-
-```bash
-git clone https://github.com/clad-sovereign/clad-mobile.git
-cd clad-mobile
-./gradlew assembleDebug   # Android
-# or open iosApp in Xcode → Run on iOS simulator/device
-```
 
 ### Status & Roadmap
 
