@@ -17,10 +17,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.uuid.ExperimentalUuidApi
 import org.koin.compose.viewmodel.koinViewModel
 import tech.wideas.clad.substrate.ConnectionState
 import tech.wideas.clad.substrate.SubstrateClient
 
+@OptIn(ExperimentalUuidApi::class)
 @Composable
 fun AccountsScreen(
     viewModel: AccountsViewModel = koinViewModel()
@@ -162,7 +164,7 @@ fun AccountsScreen(
                                 // Show only last 5 messages with slide-up animation
                                 items(
                                     items = messages.takeLast(5),
-                                    key = { message -> "${message.timestamp}-${message.direction}-${message.content.hashCode()}" }
+                                    key = { message -> message.id.toString() }
                                 ) { message ->
                                     Box(
                                         modifier = Modifier.animateItem(

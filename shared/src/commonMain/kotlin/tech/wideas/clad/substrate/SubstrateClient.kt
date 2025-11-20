@@ -14,6 +14,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import tech.wideas.clad.currentTimeMillis
 
 /**
@@ -52,16 +54,36 @@ data class RpcResponse(
  * @param maxReconnectAttempts Maximum number of reconnection attempts
  * @param dispatcher The coroutine dispatcher to use (defaults to Dispatchers.Default)
  *
- * Note: This client should be scoped to a ViewModel's lifecycle to ensure
- * proper coroutine cancellation. The internal scope will be created automatically.
+ * ## Lifecycle and Scope Management
+ *
+ * This client uses an application-level coroutine scope that persists across
+ * screen navigation. The connection remains active even when navigating between
+ * screens, allowing for continuous blockchain activity monitoring.
+ *
+ * **Scope Lifecycle:**
+ * - Created automatically with the provided dispatcher and SupervisorJob
+ * - Persists until explicit disconnect() or close() is called
+ * - Not tied to any specific ViewModel lifecycle
+ * - This design enables connection persistence across navigation
+ *
+ * **When to disconnect:**
+ * - When the user explicitly disconnects from the node
+ * - During app termination (via close())
+ * - When switching to a different node endpoint
+ *
+ * **Cleanup:**
+ * - Call close() to cancel all coroutines and release resources
+ * - This should typically be done in app shutdown or when the singleton
+ *   SubstrateClient instance is no longer needed
  */
+@OptIn(ExperimentalUuidApi::class)
 class SubstrateClient(
     private val autoReconnect: Boolean = true,
     private val maxReconnectAttempts: Int = 5,
     dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     private val logger = Logger.withTag("SubstrateClient")
-    private var scope: CoroutineScope = CoroutineScope(dispatcher + SupervisorJob())
+    private val scope: CoroutineScope = CoroutineScope(dispatcher + SupervisorJob())
     private val client = HttpClient {
         install(WebSockets)
         install(ContentNegotiation) {
@@ -90,6 +112,7 @@ class SubstrateClient(
     val metadata: StateFlow<String?> = _metadata.asStateFlow()
 
     data class NodeMessage(
+        val id: Uuid = Uuid.random(),
         val timestamp: Long,
         val direction: Direction,
         val content: String
@@ -120,18 +143,6 @@ class SubstrateClient(
      */
     fun clearMessages() {
         _messages.value = emptyList()
-    }
-
-    /**
-     * Set a custom coroutine scope (e.g., viewModelScope).
-     * This should be called before connect() to tie the client's lifecycle to the scope.
-     *
-     * @param customScope The coroutine scope to use (typically viewModelScope)
-     */
-    fun setScope(customScope: CoroutineScope) {
-        // Cancel existing scope if any operations are running
-        scope.cancel()
-        scope = customScope
     }
 
     /**
