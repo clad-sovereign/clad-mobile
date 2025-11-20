@@ -6,20 +6,26 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.fragment.app.FragmentActivity
-import tech.wideas.clad.security.initializeBiometricAuth
-import tech.wideas.clad.security.initializeSecureStorage
+import org.koin.android.ext.koin.androidContext
+import org.koin.compose.KoinApplication
+import tech.wideas.clad.di.commonModule
+import tech.wideas.clad.di.platformModule
+import tech.wideas.clad.di.viewModelModule
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Initialize security components
-        initializeSecureStorage(this)
-        initializeBiometricAuth(this)
-
         setContent {
-            App()
+            KoinApplication(
+                application = {
+                    androidContext(this@MainActivity)
+                    modules(platformModule, commonModule, viewModelModule)
+                }
+            ) {
+                App()
+            }
         }
     }
 }

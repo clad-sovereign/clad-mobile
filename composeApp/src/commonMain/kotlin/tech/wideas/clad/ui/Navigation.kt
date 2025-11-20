@@ -4,8 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import tech.wideas.clad.data.SettingsRepository
-import tech.wideas.clad.substrate.SubstrateClient
+import org.koin.compose.viewmodel.koinViewModel
 import tech.wideas.clad.ui.accounts.AccountsScreen
 import tech.wideas.clad.ui.connection.ConnectionScreen
 import tech.wideas.clad.ui.connection.ConnectionViewModel
@@ -16,10 +15,7 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun AppNavigation(
-    substrateClient: SubstrateClient,
-    settingsRepository: SettingsRepository
-) {
+fun AppNavigation() {
     val navController = rememberNavController()
 
     NavHost(
@@ -27,7 +23,7 @@ fun AppNavigation(
         startDestination = Screen.Connection.route
     ) {
         composable(Screen.Connection.route) {
-            val viewModel = ConnectionViewModel(substrateClient, settingsRepository)
+            val viewModel = koinViewModel<ConnectionViewModel>()
             ConnectionScreen(
                 viewModel = viewModel,
                 onConnected = {

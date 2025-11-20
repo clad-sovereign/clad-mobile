@@ -77,18 +77,9 @@ class AndroidBiometricAuth(private val context: Context) : BiometricAuth {
     }
 }
 
-// Singleton to hold the activity context
-private var activityContext: FragmentActivity? = null
-
-/**
- * Must be called from MainActivity.onCreate()
- */
-fun initializeBiometricAuth(activity: FragmentActivity) {
-    activityContext = activity
-}
-
 actual fun createBiometricAuth(): BiometricAuth {
-    val context = activityContext
-        ?: throw IllegalStateException("BiometricAuth not initialized. Call initializeBiometricAuth() first.")
-    return AndroidBiometricAuth(context)
+    throw UnsupportedOperationException(
+        "BiometricAuth is now managed by Koin dependency injection. " +
+        "Use koinInject<BiometricAuth>() or constructor injection instead."
+    )
 }
