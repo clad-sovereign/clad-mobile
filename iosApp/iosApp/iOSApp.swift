@@ -10,6 +10,9 @@ struct iOSApp: App {
         #else
         KermitLogger.Companion.shared.initialize(isDebug: false)
         #endif
+
+        // Initialize Koin DI
+        KoinInitializer.shared.initialize()
     }
 
     var body: some Scene {
