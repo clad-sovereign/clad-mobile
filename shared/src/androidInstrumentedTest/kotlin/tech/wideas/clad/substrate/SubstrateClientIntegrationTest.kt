@@ -2,11 +2,13 @@ package tech.wideas.clad.substrate
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
 import org.junit.After
 import org.junit.Before
@@ -215,24 +217,26 @@ class SubstrateClientIntegrationTest {
         // Given: A connected client
         client.connect(primaryEndpoint)
 
-        // Wait for connection - use state-based waiting with a timeout to avoid hanging
+        // Wait for connection - use state-based waiting
         client.connectionState.first { it is ConnectionState.Connected }
 
-        // Additional small delay to ensure connection is fully established
-        // This helps avoid race conditions where RPC completes too quickly
-        delay(100)
+        // Signal to coordinate test timing
+        val callStarted = CompletableDeferred<Unit>()
 
         // When: Starting an RPC call but disconnecting before it completes
-        val job = launch {
+        val job = launch(Dispatchers.IO) {
             val exception = assertFailsWith<SubstrateException> {
+                callStarted.complete(Unit) // Signal that call is about to be made
                 // This call will be interrupted by disconnect
                 client.call("state_getMetadata", timeoutMs = 60000)
             }
             assertEquals("Client disconnected", exception.message)
         }
 
-        // Give the RPC call time to be sent
-        delay(100)
+        // Wait for the RPC call to start, then disconnect
+        withTimeout(1000) {
+            callStarted.await()
+        }
 
         // Disconnect while the request is pending
         client.disconnect()
