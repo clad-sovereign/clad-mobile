@@ -2,6 +2,7 @@ package tech.wideas.clad.di
 
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
+import tech.wideas.clad.ui.accounts.AccountsViewModel
 import tech.wideas.clad.ui.connection.ConnectionViewModel
 
 /**
@@ -15,6 +16,12 @@ val viewModelModule = module {
         ConnectionViewModel(
             substrateClient = get(),
             settingsRepository = get()
+        )
+    }
+
+    viewModel {
+        AccountsViewModel(
+            substrateClient = get()
         )
     }
 

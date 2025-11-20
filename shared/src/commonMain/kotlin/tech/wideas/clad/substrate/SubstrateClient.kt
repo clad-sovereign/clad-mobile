@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
+import tech.wideas.clad.currentTimeMillis
 
 /**
  * Connection state of the Substrate client
@@ -88,9 +89,38 @@ class SubstrateClient(
     private val _metadata = MutableStateFlow<String?>(null)
     val metadata: StateFlow<String?> = _metadata.asStateFlow()
 
+    data class NodeMessage(
+        val timestamp: Long,
+        val direction: Direction,
+        val content: String
+    ) {
+        enum class Direction { SENT, RECEIVED }
+    }
+
+    private val _messages = MutableStateFlow<List<NodeMessage>>(emptyList())
+    val messages: StateFlow<List<NodeMessage>> = _messages.asStateFlow()
+    private val maxMessages = 50 // Keep last 50 messages (UI displays last 5)
+
     private var currentEndpoint: String? = null
     private var reconnectAttempts = 0
     private var reconnectJob: Job? = null
+
+    private fun addMessage(direction: NodeMessage.Direction, content: String) {
+        val message = NodeMessage(
+            timestamp = currentTimeMillis(),
+            direction = direction,
+            content = content
+        )
+        _messages.value = (_messages.value + message).takeLast(maxMessages)
+        logger.d { "Message added: ${direction} - ${content.take(50)}... Total messages: ${_messages.value.size}" }
+    }
+
+    /**
+     * Clear all collected messages
+     */
+    fun clearMessages() {
+        _messages.value = emptyList()
+    }
 
     /**
      * Set a custom coroutine scope (e.g., viewModelScope).
@@ -122,10 +152,12 @@ class SubstrateClient(
     private suspend fun performConnect() {
         val endpoint = currentEndpoint ?: return
 
+        logger.d { "Attempting to connect to: $endpoint" }
         _connectionState.value = ConnectionState.Connecting
 
         try {
             session = client.webSocketSession(endpoint)
+            logger.d { "WebSocket session established successfully" }
             _connectionState.value = ConnectionState.Connected
             reconnectAttempts = 0 // Reset on successful connection
 
@@ -134,13 +166,41 @@ class SubstrateClient(
                 listenForResponses()
             }
 
-            // Fetch metadata after WebSocket is fully established
+            // Fetch metadata and chain info after WebSocket is fully established
             scope.launch {
                 // Wait for first incoming frame to confirm connection is ready
                 delay(100)
+                try {
+                    // Fetch chain properties first (lighter request)
+                    logger.d { "Fetching chain properties..." }
+                    getChainProperties()
+                    logger.d { "Chain properties fetched" }
+                } catch (e: Exception) {
+                    logger.e(e) { "Failed to fetch chain properties: ${e.message}" }
+                }
+                // Then fetch metadata
                 fetchMetadata()
+
+                // Subscribe to new block headers for real-time updates
+                try {
+                    logger.d { "Subscribing to new block headers..." }
+                    subscribeNewHeads()
+                    logger.d { "Subscribed to new block headers" }
+                } catch (e: Exception) {
+                    logger.e(e) { "Failed to subscribe to new heads: ${e.message}" }
+                }
+
+                // Subscribe to finalized blocks
+                try {
+                    logger.d { "Subscribing to finalized blocks..." }
+                    subscribeFinalizedHeads()
+                    logger.d { "Subscribed to finalized blocks" }
+                } catch (e: Exception) {
+                    logger.e(e) { "Failed to subscribe to finalized heads: ${e.message}" }
+                }
             }
         } catch (e: Exception) {
+            logger.e(e) { "Connection failed to $endpoint: ${e.message}" }
             _connectionState.value = ConnectionState.Error(e.message ?: "Connection failed")
             attemptReconnect(e)
         }
@@ -188,6 +248,7 @@ class SubstrateClient(
         session = null
         _connectionState.value = ConnectionState.Disconnected
         _metadata.value = null
+        _messages.value = emptyList()
     }
 
     /**
@@ -212,6 +273,7 @@ class SubstrateClient(
 
         try {
             currentSession.send(Frame.Text(requestJson))
+            addMessage(NodeMessage.Direction.SENT, requestJson)
 
             // Wait for response with timeout
             val response = try {
@@ -241,12 +303,30 @@ class SubstrateClient(
      */
     suspend fun fetchMetadata() {
         try {
+            logger.d { "Fetching metadata from node..." }
             val result = call("state_getMetadata", JsonArray(emptyList()))
             _metadata.value = result?.jsonPrimitive?.content
+            logger.d { "Metadata fetched successfully" }
         } catch (e: Exception) {
             // Metadata fetch failed, but don't disconnect
             logger.e(e) { "Failed to fetch metadata: ${e.message}" }
         }
+    }
+
+    /**
+     * Subscribe to new block headers
+     * This will send continuous updates as new blocks are produced
+     */
+    suspend fun subscribeNewHeads() {
+        call("chain_subscribeNewHeads", JsonArray(emptyList()))
+    }
+
+    /**
+     * Subscribe to finalized block headers
+     * This will send updates when blocks are finalized
+     */
+    suspend fun subscribeFinalizedHeads() {
+        call("chain_subscribeFinalizedHeads", JsonArray(emptyList()))
     }
 
     /**
@@ -275,10 +355,12 @@ class SubstrateClient(
     private suspend fun listenForResponses() {
         val currentSession = session ?: return
 
+        logger.d { "Started listening for WebSocket responses" }
         try {
             for (frame in currentSession.incoming) {
                 if (frame is Frame.Text) {
                     val text = frame.readText()
+                    addMessage(NodeMessage.Direction.RECEIVED, text)
                     try {
                         val response = json.decodeFromString<RpcResponse>(text)
                         // Complete the deferred corresponding to this response ID
@@ -304,6 +386,7 @@ class SubstrateClient(
             }
         } catch (e: Exception) {
             // Connection lost - attempt reconnection if enabled
+            logger.e(e) { "Connection lost while listening for responses: ${e.message}" }
             _connectionState.value = ConnectionState.Error(e.message ?: "Connection lost")
             attemptReconnect(e)
         }
