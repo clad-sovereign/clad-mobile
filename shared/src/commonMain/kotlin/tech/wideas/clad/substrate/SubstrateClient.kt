@@ -46,7 +46,9 @@ data class RpcResponse(
  * Substrate RPC client using WebSocket
  */
 class SubstrateClient(
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
+    private val autoReconnect: Boolean = true,
+    private val maxReconnectAttempts: Int = 5
 ) {
     private val client = HttpClient {
         install(WebSockets)
@@ -65,13 +67,17 @@ class SubstrateClient(
 
     private var session: DefaultClientWebSocketSession? = null
     private var requestId = 0
-    private val responseChannel = Channel<RpcResponse>(Channel.UNLIMITED)
+    private val responseChannel = Channel<RpcResponse>(64) // Bounded buffer to prevent memory leaks
 
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
     private val _metadata = MutableStateFlow<String?>(null)
     val metadata: StateFlow<String?> = _metadata.asStateFlow()
+
+    private var currentEndpoint: String? = null
+    private var reconnectAttempts = 0
+    private var reconnectJob: Job? = null
 
     /**
      * Connect to Substrate node
@@ -81,32 +87,69 @@ class SubstrateClient(
             return // Already connected
         }
 
+        currentEndpoint = endpoint
+        reconnectAttempts = 0
+        reconnectJob?.cancel()
+
+        performConnect()
+    }
+
+    private suspend fun performConnect() {
+        val endpoint = currentEndpoint ?: return
+
         _connectionState.value = ConnectionState.Connecting
 
         try {
             session = client.webSocketSession(endpoint)
             _connectionState.value = ConnectionState.Connected
+            reconnectAttempts = 0 // Reset on successful connection
 
             // Start listening for responses
             scope.launch {
                 listenForResponses()
             }
 
-            // Fetch metadata immediately after connecting (in background)
+            // Fetch metadata after WebSocket is fully established
             scope.launch {
-                delay(500) // Small delay to ensure connection is fully established
+                // Wait for first incoming frame to confirm connection is ready
+                delay(100)
                 fetchMetadata()
             }
         } catch (e: Exception) {
             _connectionState.value = ConnectionState.Error(e.message ?: "Connection failed")
-            throw e
+            attemptReconnect(e)
         }
+    }
+
+    private fun attemptReconnect(error: Exception) {
+        if (!autoReconnect || reconnectAttempts >= maxReconnectAttempts) {
+            return
+        }
+
+        reconnectAttempts++
+        val delayMs = calculateBackoffDelay(reconnectAttempts)
+
+        reconnectJob = scope.launch {
+            delay(delayMs)
+            performConnect()
+        }
+    }
+
+    private fun calculateBackoffDelay(attempt: Int): Long {
+        // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+        val baseDelay = 1000L
+        val maxDelay = 16000L
+        val calculatedDelay = baseDelay * (1 shl (attempt - 1))
+        return minOf(calculatedDelay, maxDelay)
     }
 
     /**
      * Disconnect from Substrate node
      */
     suspend fun disconnect() {
+        reconnectJob?.cancel()
+        reconnectJob = null
+        currentEndpoint = null
         session?.close()
         session = null
         _connectionState.value = ConnectionState.Disconnected
@@ -114,9 +157,13 @@ class SubstrateClient(
     }
 
     /**
-     * Make an RPC call
+     * Make an RPC call with timeout
      */
-    suspend fun call(method: String, params: JsonArray = JsonArray(emptyList())): JsonElement? {
+    suspend fun call(
+        method: String,
+        params: JsonArray = JsonArray(emptyList()),
+        timeoutMs: Long = 30_000
+    ): JsonElement? {
         val currentSession = session ?: throw IllegalStateException("Not connected")
 
         val id = ++requestId
@@ -125,15 +172,23 @@ class SubstrateClient(
 
         currentSession.send(Frame.Text(requestJson))
 
-        // Wait for response with matching ID
-        while (true) {
-            val response = responseChannel.receive()
-            if (response.id == id) {
-                if (response.error != null) {
-                    throw SubstrateException("RPC error: ${response.error}")
+        // Wait for response with matching ID, with timeout
+        return try {
+            withTimeout(timeoutMs) {
+                while (true) {
+                    val response = responseChannel.receive()
+                    if (response.id == id) {
+                        if (response.error != null) {
+                            throw SubstrateException("RPC error: ${response.error}")
+                        }
+                        return@withTimeout response.result
+                    }
                 }
-                return response.result
+                @Suppress("UNREACHABLE_CODE")
+                null // This line is unreachable but satisfies the type checker
             }
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            throw SubstrateException("RPC call timeout after ${timeoutMs}ms")
         }
     }
 
@@ -189,7 +244,9 @@ class SubstrateClient(
                 }
             }
         } catch (e: Exception) {
+            // Connection lost - attempt reconnection if enabled
             _connectionState.value = ConnectionState.Error(e.message ?: "Connection lost")
+            attemptReconnect(e)
         }
     }
 

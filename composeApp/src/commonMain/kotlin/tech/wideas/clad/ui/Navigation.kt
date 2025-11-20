@@ -33,6 +33,7 @@ fun AppNavigation(
                 onConnected = {
                     navController.navigate(Screen.Accounts.route) {
                         popUpTo(Screen.Connection.route) { inclusive = true }
+                        launchSingleTop = true
                     }
                 }
             )

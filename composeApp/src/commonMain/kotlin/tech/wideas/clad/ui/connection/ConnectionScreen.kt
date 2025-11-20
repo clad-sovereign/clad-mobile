@@ -17,15 +17,11 @@ fun ConnectionScreen(
     onConnected: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isConnected = uiState.connectionState is ConnectionState.Connected
 
-    // Track if we've already navigated to prevent multiple calls
-    val hasNavigated = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-
-    // Navigate to accounts screen when connected (run only once)
-    androidx.compose.runtime.LaunchedEffect(isConnected) {
-        if (isConnected && !hasNavigated.value) {
-            hasNavigated.value = true
+    // Navigate to accounts screen when connected
+    // LaunchedEffect with isConnected key ensures this only runs when connection state changes to Connected
+    androidx.compose.runtime.LaunchedEffect(uiState.connectionState) {
+        if (uiState.connectionState is ConnectionState.Connected) {
             onConnected()
         }
     }

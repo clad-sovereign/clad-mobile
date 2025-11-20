@@ -57,8 +57,11 @@ class ConnectionViewModel(
 
     fun connect() {
         val endpoint = _uiState.value.endpoint.trim()
-        if (endpoint.isEmpty()) {
-            _uiState.value = _uiState.value.copy(error = "Please enter a valid endpoint")
+
+        // Validate endpoint format
+        val validationError = validateEndpoint(endpoint)
+        if (validationError != null) {
+            _uiState.value = _uiState.value.copy(error = validationError)
             return
         }
 
@@ -74,6 +77,24 @@ class ConnectionViewModel(
                 )
             }
         }
+    }
+
+    private fun validateEndpoint(endpoint: String): String? {
+        if (endpoint.isEmpty()) {
+            return "Please enter an endpoint"
+        }
+
+        if (!endpoint.startsWith("ws://") && !endpoint.startsWith("wss://")) {
+            return "Endpoint must start with ws:// or wss://"
+        }
+
+        // Basic URL validation
+        val urlPattern = Regex("^wss?://[\\w\\-.]+(:\\d+)?(/.*)?$")
+        if (!urlPattern.matches(endpoint)) {
+            return "Invalid endpoint format"
+        }
+
+        return null
     }
 
     fun disconnect() {
