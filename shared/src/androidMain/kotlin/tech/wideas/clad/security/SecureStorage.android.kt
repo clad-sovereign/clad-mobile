@@ -44,18 +44,9 @@ class AndroidSecureStorage(private val context: Context) : SecureStorage {
     }
 }
 
-// Singleton to hold the context
-private var applicationContext: Context? = null
-
-/**
- * Must be called from Android Application.onCreate()
- */
-fun initializeSecureStorage(context: Context) {
-    applicationContext = context.applicationContext
-}
-
 actual fun createSecureStorage(): SecureStorage {
-    val context = applicationContext
-        ?: throw IllegalStateException("SecureStorage not initialized. Call initializeSecureStorage() first.")
-    return AndroidSecureStorage(context)
+    throw UnsupportedOperationException(
+        "SecureStorage is now managed by Koin dependency injection. " +
+        "Use koinInject<SecureStorage>() or constructor injection instead."
+    )
 }

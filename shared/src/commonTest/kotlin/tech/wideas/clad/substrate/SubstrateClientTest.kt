@@ -1,8 +1,6 @@
 package tech.wideas.clad.substrate
 
 import app.cash.turbine.test
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
@@ -21,9 +19,7 @@ class SubstrateClientTest {
 
     @Test
     fun `initial connection state should be Disconnected`() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
-        val testScope = TestScope(testDispatcher)
-        val client = SubstrateClient(testScope)
+        val client = SubstrateClient(autoReconnect = false)
 
         client.connectionState.test {
             val state = awaitItem()
@@ -35,9 +31,7 @@ class SubstrateClientTest {
 
     @Test
     fun `initial metadata should be null`() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
-        val testScope = TestScope(testDispatcher)
-        val client = SubstrateClient(testScope)
+        val client = SubstrateClient(autoReconnect = false)
 
         client.metadata.test {
             val metadata = awaitItem()
@@ -49,9 +43,7 @@ class SubstrateClientTest {
 
     @Test
     fun `disconnect should reset connection state to Disconnected`() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
-        val testScope = TestScope(testDispatcher)
-        val client = SubstrateClient(testScope)
+        val client = SubstrateClient(autoReconnect = false)
 
         client.disconnect()
 
@@ -65,9 +57,7 @@ class SubstrateClientTest {
 
     @Test
     fun `disconnect should clear metadata`() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
-        val testScope = TestScope(testDispatcher)
-        val client = SubstrateClient(testScope)
+        val client = SubstrateClient(autoReconnect = false)
 
         client.disconnect()
 
@@ -171,9 +161,7 @@ class SubstrateClientTest {
 
     @Test
     fun `close should clean up resources`() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
-        val testScope = TestScope(testDispatcher)
-        val client = SubstrateClient(testScope)
+        val client = SubstrateClient(autoReconnect = false)
 
         // Should not throw
         client.close()
