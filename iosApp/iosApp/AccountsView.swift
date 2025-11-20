@@ -1,6 +1,5 @@
 import SwiftUI
 import Shared
-import Combine
 
 struct AccountsView: View {
     @ObservedObject var viewModel: AccountsViewModelWrapper
