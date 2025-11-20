@@ -2,6 +2,7 @@ package tech.wideas.clad.substrate
 
 import app.cash.turbine.test
 import kotlinx.coroutines.test.runTest
+import kotlin.experimental.ExperimentalNativeApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -96,6 +97,7 @@ class SubstrateClientTest {
         // (Verifies cleanup happens gracefully)
     }
 
+    @OptIn(ExperimentalNativeApi::class)
     @Test
     fun testGetChainPropertiesThrowsWhenNotConnected() = runTest {
         // Given: A disconnected client
@@ -117,6 +119,7 @@ class SubstrateClientTest {
         }
     }
 
+    @OptIn(ExperimentalNativeApi::class)
     @Test
     fun testCallThrowsWhenNotConnected() = runTest {
         // Given: A disconnected client

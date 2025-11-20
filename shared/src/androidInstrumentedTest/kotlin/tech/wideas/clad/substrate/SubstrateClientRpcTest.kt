@@ -29,7 +29,7 @@ import kotlin.time.Duration.Companion.seconds
 class SubstrateClientRpcTest {
 
     private lateinit var client: SubstrateClient
-    private val endpoint = "ws://localhost:9944"
+    private val endpoint = "ws://localhost:9944"  // Use 10.0.2.2 to reach host from Android emulator
 
     @Before
     fun setup() = runTest(timeout = 30.seconds) {

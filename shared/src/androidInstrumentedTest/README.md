@@ -2,14 +2,20 @@
 
 This directory contains comprehensive integration tests for the `SubstrateClient` that validate WebSocket connection behavior with real Substrate nodes.
 
+## Status
+
+✅ **All 56 integration tests are fully functional and can be executed**
+
+The test discovery issue has been resolved by adding `testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"` to the Android configuration in `build.gradle.kts`.
+
 ## Overview
 
-The integration tests are organized into four test suites:
+The integration tests are organized into four test suites totaling **56 tests**:
 
-1. **SubstrateClientIntegrationTest** - Connection state management and lifecycle
-2. **SubstrateClientRpcTest** - RPC method calls and error handling
-3. **SubstrateClientReconnectionTest** - Automatic reconnection with exponential backoff
-4. **SubstrateClientConcurrencyTest** - Concurrent RPC calls and response matching
+1. **SubstrateClientIntegrationTest** (9 tests) - Connection state management and lifecycle
+2. **SubstrateClientRpcTest** (20 tests) - RPC method calls and error handling
+3. **SubstrateClientReconnectionTest** (12 tests) - Automatic reconnection with exponential backoff
+4. **SubstrateClientConcurrencyTest** (15 tests) - Concurrent RPC calls and response matching
 
 ## Prerequisites
 
@@ -22,33 +28,53 @@ These tests require at least one local Substrate node running. The tests are con
 
 ### Starting Nodes
 
-Based on your clad-studio setup, start your nodes:
+**Option 1: Single Dev Node (Simplest)**
+
+For testing, the easiest approach is to use a single development node:
+
+```bash
+cd /path/to/clad-studio
+./target/release/clad-node --dev --tmp
+```
+
+This will start a node on `ws://localhost:9944` that produces blocks immediately.
+
+**Option 2: Two-Node Local Network (For Multi-Node Tests)**
+
+To test with multiple nodes, you need to properly peer them together:
 
 ```bash
 cd /path/to/clad-studio
 
-# Start first node (alice)
+# Terminal 1: Start alice node and note its node identity
 ./target/release/clad-node \
   --chain local \
   --alice \
-  --port 30334 \
-  --rpc-port 9944 \
   --tmp \
+  --port 30333 \
+  --rpc-port 9944 \
   --unsafe-force-node-key-generation
 
-# Start second node (bob) in another terminal
+# Look for output like: Local node identity is: 12D3KooW...
+# Copy this node identity
+
+# Terminal 2: Start bob node and connect it to alice
 ./target/release/clad-node \
   --chain local \
   --bob \
-  --port 30333 \
-  --rpc-port 9945 \
   --tmp \
+  --port 30334 \
+  --rpc-port 9945 \
+  --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/<ALICE_NODE_ID> \
   --unsafe-force-node-key-generation
 ```
 
-Or if you have them configured differently, just ensure:
-- At least one node is accessible at `ws://localhost:9944`
-- Nodes are fully synced and producing blocks
+Replace `<ALICE_NODE_ID>` with the actual node identity from alice's output.
+
+**Important**: For multi-node setups:
+- Nodes must discover and peer with each other before they can produce blocks
+- Wait until you see "Imported" blocks in both terminals
+- Both nodes need to be synced before tests will pass
 
 ## Running the Tests
 

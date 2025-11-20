@@ -31,7 +31,8 @@ class SubstrateClientIntegrationTest {
 
     private lateinit var client: SubstrateClient
 
-    // Test endpoints - your local nodes
+    // Test endpoints - use 10.0.2.2 to reach host machine from Android emulator
+    // For physical devices, use adb reverse tcp:9944 tcp:9944 or your machine's IP
     private val primaryEndpoint = "ws://localhost:9944"   // alice
     private val secondaryEndpoint = "ws://localhost:9945" // bob
 
