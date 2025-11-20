@@ -53,6 +53,15 @@ kotlin {
             implementation(libs.junit)
             implementation(libs.mockk)
         }
+        androidInstrumentedTest.dependencies {
+            implementation(libs.junit)
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.androidx.test.runner)
+            implementation(libs.androidx.test.rules)
+            implementation(libs.androidx.testExt.junit)
+            implementation(libs.turbine)
+        }
     }
 }
 

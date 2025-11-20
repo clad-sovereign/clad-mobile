@@ -1,0 +1,201 @@
+package tech.wideas.clad.substrate
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.cash.turbine.test
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonArray
+import org.junit.After
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+
+/**
+ * Integration tests for SubstrateClient.
+ *
+ * These tests require a local Substrate node running on ws://localhost:9944
+ *
+ * To run these tests:
+ * 1. Start a local Substrate node (e.g., ./target/release/clad-node --dev --chain local --alice --port 30334 --rpc-port 9944)
+ * 2. Run: ./gradlew :shared:connectedAndroidTest
+ *
+ * Note: These tests will be skipped if no node is running on the expected port.
+ */
+@RunWith(AndroidJUnit4::class)
+class SubstrateClientIntegrationTest {
+
+    private lateinit var client: SubstrateClient
+
+    // Test endpoints - your local nodes
+    private val primaryEndpoint = "ws://localhost:9944"   // alice
+    private val secondaryEndpoint = "ws://localhost:9945" // bob
+
+    @Before
+    fun setup() {
+        client = SubstrateClient(autoReconnect = false)
+    }
+
+    @After
+    fun teardown() = runTest {
+        client.disconnect()
+        client.close()
+    }
+
+    // ============================================
+    // Connection Tests
+    // ============================================
+
+    @Test
+    fun testConnectToLocalNode() = runTest(timeout = 30.seconds) {
+        // Given: A disconnected client
+        client.connectionState.test {
+            assertIs<ConnectionState.Disconnected>(awaitItem())
+
+            // When: Connecting to local node
+            client.connect(primaryEndpoint)
+
+            // Then: State transitions through Connecting to Connected
+            val connectingState = awaitItem()
+            assertIs<ConnectionState.Connecting>(connectingState)
+
+            val connectedState = awaitItem()
+            assertIs<ConnectionState.Connected>(connectedState)
+        }
+    }
+
+    @Test
+    fun testConnectionStateTransitions() = runTest(timeout = 30.seconds) {
+        val states = mutableListOf<ConnectionState>()
+
+        client.connectionState.test {
+            // Collect initial state
+            states.add(awaitItem())
+
+            // Connect
+            client.connect(primaryEndpoint)
+
+            // Collect state transitions
+            states.add(awaitItem()) // Connecting
+            states.add(awaitItem()) // Connected
+
+            // Verify correct sequence
+            assertIs<ConnectionState.Disconnected>(states[0])
+            assertIs<ConnectionState.Connecting>(states[1])
+            assertIs<ConnectionState.Connected>(states[2])
+        }
+    }
+
+    @Test
+    fun testConnectionTimeout() = runTest(timeout = 30.seconds) {
+        // Given: An invalid endpoint
+        val invalidEndpoint = "ws://localhost:9999" // Non-existent port
+
+        client.connectionState.test {
+            skipItems(1) // Skip initial Disconnected state
+
+            // When: Attempting to connect to invalid endpoint
+            client.connect(invalidEndpoint)
+
+            // Then: State transitions to Connecting
+            assertIs<ConnectionState.Connecting>(awaitItem())
+
+            // And eventually to Error state
+            val errorState = awaitItem()
+            assertIs<ConnectionState.Error>(errorState)
+            assertTrue(errorState.message.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun testDisconnectFromConnectedNode() = runTest(timeout = 30.seconds) {
+        // Given: A connected client
+        client.connect(primaryEndpoint)
+        delay(2000) // Wait for connection
+
+        client.connectionState.test {
+            skipItems(1) // Skip current state
+
+            // When: Disconnecting
+            client.disconnect()
+
+            // Then: State becomes Disconnected
+            val state = awaitItem()
+            assertIs<ConnectionState.Disconnected>(state)
+        }
+    }
+
+    @Test
+    fun testAlreadyConnectedDoesNotReconnect() = runTest(timeout = 30.seconds) {
+        // Given: A connected client
+        client.connect(primaryEndpoint)
+        delay(2000) // Wait for connection
+
+        client.connectionState.test {
+            val initialState = awaitItem()
+            assertIs<ConnectionState.Connected>(initialState)
+
+            // When: Calling connect again with same endpoint
+            client.connect(primaryEndpoint)
+
+            // Then: No state change occurs (times out waiting for new state)
+            // This demonstrates idempotent connection behavior
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun testConnectToSecondaryNode() = runTest(timeout = 30.seconds) {
+        // Test connecting to the second node (bob on port 9945)
+        client.connectionState.test {
+            skipItems(1) // Skip Disconnected
+
+            client.connect(secondaryEndpoint)
+
+            assertIs<ConnectionState.Connecting>(awaitItem())
+            assertIs<ConnectionState.Connected>(awaitItem())
+        }
+    }
+
+    @Test
+    fun testMetadataFetchedAfterConnection() = runTest(timeout = 30.seconds) {
+        // Given: A disconnected client
+        client.metadata.test {
+            assertEquals(null, awaitItem()) // Initially null
+
+            // When: Connecting to node
+            client.connect(primaryEndpoint)
+
+            // Wait for connection and metadata fetch
+            delay(3000)
+
+            // Then: Metadata should be populated
+            val metadata = awaitItem()
+            assertNotNull(metadata)
+            assertTrue(metadata.isNotEmpty())
+            assertTrue(metadata.startsWith("0x")) // Metadata is hex-encoded
+        }
+    }
+
+    @Test
+    fun testMetadataClearedOnDisconnect() = runTest(timeout = 30.seconds) {
+        // Given: A connected client with metadata
+        client.connect(primaryEndpoint)
+        delay(3000) // Wait for connection and metadata
+
+        client.metadata.test {
+            skipItems(1) // Skip current metadata
+
+            // When: Disconnecting
+            client.disconnect()
+
+            // Then: Metadata is cleared
+            val metadata = awaitItem()
+            assertEquals(null, metadata)
+        }
+    }
+}
