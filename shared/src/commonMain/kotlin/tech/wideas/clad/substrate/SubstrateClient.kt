@@ -44,12 +44,18 @@ data class RpcResponse(
 
 /**
  * Substrate RPC client using WebSocket
+ *
+ * @param autoReconnect Enable automatic reconnection on connection loss
+ * @param maxReconnectAttempts Maximum number of reconnection attempts
+ *
+ * Note: This client should be scoped to a ViewModel's lifecycle to ensure
+ * proper coroutine cancellation. The internal scope will be created automatically.
  */
 class SubstrateClient(
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
     private val autoReconnect: Boolean = true,
     private val maxReconnectAttempts: Int = 5
 ) {
+    private var scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private val client = HttpClient {
         install(WebSockets)
         install(ContentNegotiation) {
@@ -78,6 +84,18 @@ class SubstrateClient(
     private var currentEndpoint: String? = null
     private var reconnectAttempts = 0
     private var reconnectJob: Job? = null
+
+    /**
+     * Set a custom coroutine scope (e.g., viewModelScope).
+     * This should be called before connect() to tie the client's lifecycle to the scope.
+     *
+     * @param customScope The coroutine scope to use (typically viewModelScope)
+     */
+    fun setScope(customScope: CoroutineScope) {
+        // Cancel existing scope if any operations are running
+        scope.cancel()
+        scope = customScope
+    }
 
     /**
      * Connect to Substrate node

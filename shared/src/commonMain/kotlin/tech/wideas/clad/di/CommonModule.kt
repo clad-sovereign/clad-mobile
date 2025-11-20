@@ -1,9 +1,7 @@
 package tech.wideas.clad.di
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import tech.wideas.clad.data.SettingsRepository
 import tech.wideas.clad.substrate.SubstrateClient
@@ -12,16 +10,11 @@ import tech.wideas.clad.substrate.SubstrateClient
  * Common Koin module for shared dependencies
  */
 val commonModule = module {
-    // Provide a coroutine scope for SubstrateClient
-    single {
-        CoroutineScope(Dispatchers.Default + SupervisorJob())
-    }
-
-    // SubstrateClient with default parameters
+    // SubstrateClient with configurable autoReconnect
+    // The scope will be set by the ViewModel to tie lifecycle properly
     single {
         SubstrateClient(
-            scope = get(),
-            autoReconnect = true
+            autoReconnect = getProperty("substrate.autoReconnect", "true").toBoolean()
         )
     }
 

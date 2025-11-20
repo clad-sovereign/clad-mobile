@@ -61,6 +61,14 @@ android {
     }
     buildTypes {
         getByName("release") {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        getByName("debug") {
+            // ProGuard disabled for debug builds for faster iteration
             isMinifyEnabled = false
         }
     }

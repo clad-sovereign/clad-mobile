@@ -1,6 +1,5 @@
 package tech.wideas.clad.security
 
-import android.content.Context
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -10,11 +9,14 @@ import kotlin.coroutines.suspendCoroutine
 
 /**
  * Android implementation using BiometricPrompt
+ *
+ * Note: Requires FragmentActivity for BiometricPrompt integration.
+ * Should be injected via Koin factory with activity parameter.
  */
-class AndroidBiometricAuth(private val context: Context) : BiometricAuth {
+class AndroidBiometricAuth(private val activity: FragmentActivity) : BiometricAuth {
 
     override suspend fun isAvailable(): Boolean {
-        val biometricManager = BiometricManager.from(context)
+        val biometricManager = BiometricManager.from(activity)
         return when (biometricManager.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG)) {
             BiometricManager.BIOMETRIC_SUCCESS -> true
             else -> false
@@ -26,12 +28,7 @@ class AndroidBiometricAuth(private val context: Context) : BiometricAuth {
         subtitle: String,
         description: String
     ): BiometricResult = suspendCoroutine { continuation ->
-        val activity = context as? FragmentActivity
-            ?: return@suspendCoroutine continuation.resume(
-                BiometricResult.Error("Context must be FragmentActivity")
-            )
-
-        val executor = ContextCompat.getMainExecutor(context)
+        val executor = ContextCompat.getMainExecutor(activity)
 
         val biometricPrompt = BiometricPrompt(
             activity,

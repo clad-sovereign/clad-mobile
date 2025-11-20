@@ -1,5 +1,6 @@
 package tech.wideas.clad.di
 
+import androidx.fragment.app.FragmentActivity
 import org.koin.dsl.module
 import tech.wideas.clad.security.AndroidBiometricAuth
 import tech.wideas.clad.security.AndroidSecureStorage
@@ -15,8 +16,10 @@ actual val platformModule = module {
         AndroidSecureStorage(get())
     }
 
-    // BiometricAuth using activity context (will be provided by MainActivity)
-    single<BiometricAuth> {
-        AndroidBiometricAuth(get())
+    // BiometricAuth factory - requires FragmentActivity parameter
+    // Usage: val biometricAuth = koinInject<BiometricAuth>(parameters = { parametersOf(activity) })
+    factory<BiometricAuth> { params ->
+        val activity = params.get<FragmentActivity>()
+        AndroidBiometricAuth(activity)
     }
 }
