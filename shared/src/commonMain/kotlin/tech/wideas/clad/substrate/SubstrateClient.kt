@@ -166,11 +166,7 @@ class SubstrateClient(
         val endpoint = currentEndpoint ?: return
 
         logger.d { "Attempting to connect to: $endpoint" }
-        // Only change to Connecting state if this is NOT an auto-reconnect attempt
-        // This prevents UI blinking when reconnection fails repeatedly
-        if (!isAutoReconnecting) {
-            _connectionState.value = ConnectionState.Connecting
-        }
+        _connectionState.value = ConnectionState.Connecting
 
         try {
             session = client.webSocketSession(endpoint)
@@ -268,6 +264,17 @@ class SubstrateClient(
         _connectionState.value = ConnectionState.Disconnected
         _metadata.value = null
         _messages.value = emptyList()
+    }
+
+    /**
+     * Wait for the client to reach a disconnected state
+     * Useful in tests to ensure clean state transitions
+     */
+    suspend fun waitForDisconnection() {
+        // Wait for the connection state to be Disconnected
+        while (_connectionState.value !is ConnectionState.Disconnected) {
+            delay(50)
+        }
     }
 
     /**

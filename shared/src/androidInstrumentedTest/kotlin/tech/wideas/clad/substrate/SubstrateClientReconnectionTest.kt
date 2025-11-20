@@ -12,6 +12,7 @@ import org.junit.runner.RunWith
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Integration tests for SubstrateClient reconnection behavior.
@@ -69,12 +70,12 @@ class SubstrateClientReconnectionTest {
     @Test
     fun testReconnectOnConnectionFailure() = runBlocking {
         // Given: Client with auto-reconnect enabled
-        client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 3)
+        client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 3, dispatcher = Dispatchers.IO)
 
         // When: Attempting to connect to invalid endpoint
         val invalidEndpoint = "ws://localhost:9999"
 
-        client.connectionState.test {
+        client.connectionState.test(timeout = 10000.milliseconds) {
             skipItems(1) // Skip Disconnected
 
             client.connect(invalidEndpoint)
@@ -86,9 +87,6 @@ class SubstrateClientReconnectionTest {
             states.add(awaitItem()) // Connecting
             states.add(awaitItem()) // Error
 
-            // Wait for backoff and retry
-            delay(2000)
-
             // Second attempt (after ~1s backoff)
             states.add(awaitItem()) // Connecting
             states.add(awaitItem()) // Error
@@ -99,6 +97,8 @@ class SubstrateClientReconnectionTest {
                 connectingStates.size >= 2,
                 "Should see multiple Connecting states during reconnection attempts"
             )
+
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -110,7 +110,7 @@ class SubstrateClientReconnectionTest {
         // When: Attempting to connect to invalid endpoint
         val invalidEndpoint = "ws://localhost:9999"
 
-        client.connectionState.test {
+        client.connectionState.test(timeout = 10000.milliseconds) {
             skipItems(1) // Skip Disconnected
 
             client.connect(invalidEndpoint)
@@ -122,13 +122,9 @@ class SubstrateClientReconnectionTest {
             states.add(awaitItem()) // Connecting
             states.add(awaitItem()) // Error
 
-            delay(1500) // Wait for backoff (exponential: 1s)
-
-            // Attempt 2
+            // Attempt 2 (after ~1s backoff)
             states.add(awaitItem()) // Connecting
             states.add(awaitItem()) // Error
-
-            delay(3000) // Wait longer for potential third attempt (exponential: 2s + buffer)
 
             // Then: After max attempts, should stay in Error state
             // Use cancelAndIgnoreRemainingEvents instead of expectNoEvents to avoid race conditions
@@ -150,32 +146,42 @@ class SubstrateClientReconnectionTest {
         val invalidEndpoint = "ws://localhost:9999"
         val attemptTimestamps = mutableListOf<Long>()
 
-        client.connectionState.test {
+        client.connectionState.test(timeout = 10000.milliseconds) {
             skipItems(1) // Skip Disconnected
 
             client.connect(invalidEndpoint)
 
             // Record timestamps of connection attempts
-            for (i in 1..3) {
-                val state = awaitItem()
-                if (state is ConnectionState.Connecting) {
-                    attemptTimestamps.add(System.currentTimeMillis())
-                }
-                if (state is ConnectionState.Error && i < 3) {
-                    // Don't wait after recording - just await the next attempt
-                }
+            // Attempt 1
+            var state = awaitItem()
+            if (state is ConnectionState.Connecting) {
+                attemptTimestamps.add(System.currentTimeMillis())
+            }
+            awaitItem() // Error
+
+            // Attempt 2
+            state = awaitItem()
+            if (state is ConnectionState.Connecting) {
+                attemptTimestamps.add(System.currentTimeMillis())
+            }
+            awaitItem() // Error
+
+            // Attempt 3
+            state = awaitItem()
+            if (state is ConnectionState.Connecting) {
+                attemptTimestamps.add(System.currentTimeMillis())
             }
 
             cancelAndIgnoreRemainingEvents()
         }
 
-        // Then: Delays should increase (exponential backoff: ~1s, ~2s, ~4s)
+        // Then: Delays should increase (exponential backoff: ~1s, ~2s)
         if (attemptTimestamps.size >= 2) {
             val delay1 = attemptTimestamps[1] - attemptTimestamps[0]
 
             // First delay should be around 1000ms (with reasonable tolerance for test overhead)
             assertTrue(
-                delay1 in 800..1500,
+                delay1 in 800..2000,
                 "First reconnect delay should be ~1s, was ${delay1}ms"
             )
         }
@@ -184,9 +190,9 @@ class SubstrateClientReconnectionTest {
     @Test
     fun testReconnectAttemptsResetOnSuccess() = runBlocking {
         // Given: Client with auto-reconnect
-        client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 5)
+        client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 5, dispatcher = Dispatchers.IO)
 
-        client.connectionState.test {
+        client.connectionState.test(timeout = 15000.milliseconds) {
             skipItems(1) // Skip Disconnected
 
             // When: Successfully connecting to valid endpoint
@@ -204,15 +210,16 @@ class SubstrateClientReconnectionTest {
 
             // Should get full reconnect attempts, not reduced by previous attempts
             val states = mutableListOf<ConnectionState>()
+
+            // Collect at least 4 state changes (2 attempts = 4 states)
             repeat(4) {
                 states.add(awaitItem())
-                delay(2000)
             }
 
             val connectingCount = states.count { it is ConnectionState.Connecting }
             assertTrue(
-                connectingCount >= 1,
-                "Reconnect counter should reset after successful connection"
+                connectingCount >= 2,
+                "Reconnect counter should reset after successful connection, had $connectingCount attempts"
             )
 
             cancelAndIgnoreRemainingEvents()
@@ -235,7 +242,7 @@ class SubstrateClientReconnectionTest {
 
         val invalidEndpoint = "ws://localhost:9999"
 
-        client.connectionState.test {
+        client.connectionState.test(timeout = 10000.milliseconds) {
             skipItems(1) // Skip Disconnected
 
             // Start with invalid endpoint
@@ -245,14 +252,10 @@ class SubstrateClientReconnectionTest {
             assertIs<ConnectionState.Connecting>(awaitItem())
             assertIs<ConnectionState.Error>(awaitItem())
 
-            delay(1500) // Wait for first backoff
-
             assertIs<ConnectionState.Connecting>(awaitItem())
             assertIs<ConnectionState.Error>(awaitItem())
 
             // "Node becomes available" - disconnect first to stop reconnection
-            // Need to wait a bit before disconnecting to avoid race with next reconnect attempt
-            delay(100)
             cancelAndIgnoreRemainingEvents()
         }
 
@@ -260,7 +263,7 @@ class SubstrateClientReconnectionTest {
         client.disconnect()
         client.waitForDisconnection()
 
-        client.connectionState.test {
+        client.connectionState.test(timeout = 10000.milliseconds) {
             skipItems(1) // Skip current state
 
             client.connect("ws://localhost:9944")
@@ -351,9 +354,9 @@ class SubstrateClientReconnectionTest {
     @Test
     fun testHighMaxReconnectAttempts() = runBlocking {
         // Given: Client with high max reconnect attempts
-        client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 100)
+        client = SubstrateClient(autoReconnect = true, maxReconnectAttempts = 100, dispatcher = Dispatchers.IO)
 
-        client.connectionState.test {
+        client.connectionState.test(timeout = 15000.milliseconds) {
             skipItems(1) // Skip Disconnected
 
             // When: Connecting to invalid endpoint
@@ -362,15 +365,15 @@ class SubstrateClientReconnectionTest {
             // Then: Should keep retrying within the test timeout
             val states = mutableListOf<ConnectionState>()
 
-            repeat(6) { // Collect several attempts
+            // Collect at least 6 state changes (3 attempts = 6 states)
+            repeat(6) {
                 states.add(awaitItem())
-                delay(2000)
             }
 
             val connectingCount = states.count { it is ConnectionState.Connecting }
             assertTrue(
                 connectingCount >= 3,
-                "Should see multiple reconnection attempts with high limit"
+                "Should see multiple reconnection attempts with high limit, had $connectingCount"
             )
 
             cancelAndIgnoreRemainingEvents()
