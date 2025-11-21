@@ -42,3 +42,6 @@ License: Apache-2.0
 Part of the Clad Studio sovereign RWA stack — aligned with Polkadot's official RWA tokenization guidelines.
 
 Contact: helloclad@wideas.tech
+
+> **Disclaimer**  
+> Clad Sovereign is pre-pilot software. It is not yet intended for production use or real fund issuance. Use only on testnets or local chains.
