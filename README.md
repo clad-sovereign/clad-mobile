@@ -1,3 +1,6 @@
+![Clad Signer Demo – Native iOS & Android](https://cdn.loom.com/sessions/thumbnails/dd334230db154f9891f46664ae02aec4-with-play.gif)
+*[Watch 60-second demo – November 2025]* (https://www.loom.com/share/dd334230db154f9891f46664ae02aec4)
+
 # Clad Signer
 
 **Native mobile signing application for sovereign and emerging-market RWA tokenization on Polkadot/Substrate**
