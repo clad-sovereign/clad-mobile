@@ -10,7 +10,7 @@ Clad Signer eliminates the browser and extension dependency that prevents financ
 
 Designed and built as the mobile counterpart to [Clad Studio](https://github.com/clad-sovereign/clad-studio) — the open-source tokenization toolkit targeting sovereign issuers and state-owned enterprises.
 
-### Key features (MVP → Q1 2026)
+### Key features (Production delivery: Feb 2026)
 
 - Full Substrate extrinsic signing via Polkadot.kt / Rust-based metadata parsing
 - Biometric authentication (Face ID / Touch ID / Android BiometricPrompt)
@@ -33,9 +33,9 @@ Primary jurisdictions (2026 pilots): Indonesia • Kazakhstan • Nigeria • Eg
 
 | Phase                  | Timeline         | Milestones |
 |------------------------|------------------|------------|
-| Phase 1 – Core signer  | Nov 2025 – Jan 2026 | Biometric login • Online + QR offline signing • Integration with `pallet-clad-token` |
-| Phase 2 – Admin tools  | Feb – Apr 2026   | Full transaction builder • Real-time balance & compliance status • First sovereign pilots |
-| Phase 3 – White-label  | H2 2026 onward   | Per-country branding • Localized UI • Central-bank node bundles |
+| Phase 1 – Production Infrastructure | Nov 2025 – Feb 2026 | Secure account management (seed/QR import, BIP39) • Biometric-protected key storage • Balance queries • Full signing pipeline (online + offline QR) • Comprehensive testing • CI/CD automation |
+| Phase 2 – Admin Tools  | Mar – Jun 2026   | Enhanced transaction builder • Real-time compliance monitoring • Transaction history • First sovereign pilots |
+| Phase 3 – White-label  | H2 2026 onward   | Per-country branding • Localized UI • Hardware wallet integration • Central-bank node bundles |
 
 License: Apache-2.0
 
