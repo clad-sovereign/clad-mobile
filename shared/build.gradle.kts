@@ -87,3 +87,18 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 }
+
+// CI Test Configuration - Phase 1: Unit Tests Only
+tasks.withType<Test> {
+    // Exclude integration tests that require a real Substrate node
+    exclude("**/SubstrateClient*IntegrationTest*")
+    exclude("**/SubstrateClient*RpcTest*")
+    exclude("**/SubstrateClient*ConcurrencyTest*")
+    exclude("**/SubstrateClient*ReconnectionTest*")
+
+    // These tests run in CI (no node required):
+    // - BiometricAuthTest
+    // - SecureStorageTest
+    // - SettingsRepositoryTest
+    // - ConnectionViewModelTest
+}
