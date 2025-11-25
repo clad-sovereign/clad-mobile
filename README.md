@@ -5,7 +5,7 @@
 
 ![CI](https://github.com/clad-sovereign/clad-mobile/workflows/CI/badge.svg)
 
-**Native mobile signing application for sovereign and emerging-market RWA tokenization on Polkadot/Substrate**
+**Native mobile signing application for sovereign and emerging-market RWA tokenization on Polkadot/Substrate**  
 Kotlin Multiplatform • iOS & Android • Biometric authentication • Offline-capable
 
 Clad Signer eliminates the browser and extension dependency that prevents finance-ministry and debt-office officials from using Substrate-based tokenized assets in practice.
