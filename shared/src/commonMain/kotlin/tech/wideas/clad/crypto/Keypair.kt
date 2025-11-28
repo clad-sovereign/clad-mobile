@@ -23,6 +23,12 @@ object NetworkPrefix {
 
     /** Generic Substrate prefix - alias for [CLAD] during development. */
     const val GENERIC_SUBSTRATE: Short = CLAD
+
+    /** Polkadot relay chain prefix. */
+    const val POLKADOT: Short = 0
+
+    /** Kusama relay chain prefix. */
+    const val KUSAMA: Short = 2
 }
 
 /**

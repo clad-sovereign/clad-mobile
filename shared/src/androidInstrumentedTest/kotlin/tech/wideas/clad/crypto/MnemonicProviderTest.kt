@@ -292,4 +292,91 @@ class MnemonicProviderTest {
             "Passphrase should be case-sensitive"
         )
     }
+
+    // ============================================================================
+    // Cross-Platform Determinism Tests (Known Test Vectors)
+    // ============================================================================
+
+    /**
+     * CRITICAL TEST: Verifies Android produces the same keypair as Substrate subkey.
+     * If this test fails, Android wallets will NOT be recoverable on other platforms!
+     *
+     * Test vector from Substrate subkey documentation:
+     * `subkey inspect "caution juice atom organ advance problem want pledge someone senior holiday very"`
+     *
+     * This test ensures cross-platform compatibility with:
+     * - iOS (NovaCrypto) - tested in iosAppTests/MnemonicProviderTests.swift
+     * - Web wallets (polkadot.js)
+     * - Substrate CLI (subkey)
+     */
+    @Test
+    fun `known mnemonic produces expected sr25519 public key`() {
+        val testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"
+        val expectedPublicKeyHex = "d6a3105d6768e956e9e5d41050ac29843f98561410d3a47f9dd5b3b227ab8746"
+
+        val keypair = provider.toKeypair(
+            mnemonic = testMnemonic,
+            passphrase = "",
+            keyType = KeyType.SR25519,
+            derivationPath = ""
+        )
+
+        val actualPublicKeyHex = keypair.publicKey.toHexString()
+
+        assertEquals(
+            expectedPublicKeyHex,
+            actualPublicKeyHex,
+            """
+            CROSS-PLATFORM DETERMINISM FAILURE!
+
+            The SR25519 public key derived from the test mnemonic does not match
+            the expected value from Substrate subkey.
+
+            Mnemonic: "$testMnemonic"
+            Expected: $expectedPublicKeyHex
+            Actual:   $actualPublicKeyHex
+
+            This means Android will generate DIFFERENT addresses than iOS/web wallets
+            from the same recovery phrase, breaking wallet portability!
+            """.trimIndent()
+        )
+    }
+
+    /**
+     * Verifies Android produces the correct SS58 address from a known mnemonic.
+     * This complements the public key test above and validates the full
+     * mnemonic → keypair → address pipeline.
+     */
+    @Test
+    fun `known mnemonic produces expected ss58 address`() {
+        val testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"
+        val expectedAddress = "5Gv8YYFu8H1btvmrJy9FjjAWfb99wrhV3uhPFoNEr918utyR"
+
+        val keypair = provider.toKeypair(
+            mnemonic = testMnemonic,
+            passphrase = "",
+            keyType = KeyType.SR25519,
+            derivationPath = ""
+        )
+
+        val actualAddress = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
+
+        assertEquals(
+            expectedAddress,
+            actualAddress,
+            """
+            SS58 address mismatch!
+
+            Expected: $expectedAddress
+            Actual:   $actualAddress
+            """.trimIndent()
+        )
+    }
+
+    // ============================================================================
+    // Helper Methods
+    // ============================================================================
+
+    private fun ByteArray.toHexString(): String =
+        joinToString("") { byte -> "%02x".format(byte) }
 }
