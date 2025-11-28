@@ -1,0 +1,22 @@
+language = Objective-C
+package = novacrypto
+
+headers = NovaCrypto/IRMnemonicCreator.h \
+          NovaCrypto/IRCryptoKey.h \
+          NovaCrypto/IRCryptoKeypair.h \
+          NovaCrypto/IRCryptoKeyFactory.h \
+          NovaCrypto/IRSeedCreator.h \
+          NovaCrypto/IRKeyDeriviationFunction.h \
+          NovaCrypto/SNBIP39SeedCreator.h \
+          NovaCrypto/SNKeyFactory.h \
+          NovaCrypto/SNKeypair.h \
+          NovaCrypto/SNPublicKey.h \
+          NovaCrypto/SNPrivateKey.h \
+          NovaCrypto/EDKeyFactory.h \
+          NovaCrypto/EDPublicKey.h \
+          NovaCrypto/EDPrivateKey.h \
+          NovaCrypto/SS58AddressFactory.h
+
+headerFilter = NovaCrypto/**
+
+compilerOpts = -framework Foundation

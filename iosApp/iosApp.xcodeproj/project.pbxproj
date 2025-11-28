@@ -6,8 +6,25 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AF70A0022ED94D92005A0B9E /* NovaCrypto in Frameworks */ = {isa = PBXBuildFile; productRef = AF70A0012ED94D92005A0B9E /* NovaCrypto */; };
+		AF70A0312ED9556A005A0B9E /* NovaCrypto in Frameworks */ = {isa = PBXBuildFile; productRef = AF70A0302ED9556A005A0B9E /* NovaCrypto */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		AF70A0222ED95431005A0B9E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 41DA56CC642F0FB8BAC67C9E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EF94B431A8D14B7FA6D23FA2;
+			remoteInfo = iosApp;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		9E5ED8605C72F0FA6921888E /* CladSigner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CladSigner.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF70A01E2ED95431005A0B9E /* iosAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iosAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF70A02C2ED95543005A0B9E /* Shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Shared.framework; path = "../shared/build/xcode-frameworks/Debug/iphonesimulator18.5/Shared.framework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -34,13 +51,27 @@
 			path = Configuration;
 			sourceTree = "<group>";
 		};
+		AF70A01F2ED95431005A0B9E /* iosAppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = iosAppTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		AF70A01B2ED95431005A0B9E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AF70A0312ED9556A005A0B9E /* NovaCrypto in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F5D5B32F477B58EC833BC163 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF70A0022ED94D92005A0B9E /* NovaCrypto in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -52,14 +83,25 @@
 			children = (
 				65A8C37EFD991304D2D980A4 /* Configuration */,
 				57039967D25B374E68FEA582 /* iosApp */,
+				AF70A01F2ED95431005A0B9E /* iosAppTests */,
+				AF70A02B2ED95543005A0B9E /* Frameworks */,
 				DAAC840749B13491B34DC1A6 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		AF70A02B2ED95543005A0B9E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AF70A02C2ED95543005A0B9E /* Shared.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		DAAC840749B13491B34DC1A6 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				9E5ED8605C72F0FA6921888E /* CladSigner.app */,
+				AF70A01E2ED95431005A0B9E /* iosAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -67,6 +109,30 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		AF70A01D2ED95431005A0B9E /* iosAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF70A0262ED95431005A0B9E /* Build configuration list for PBXNativeTarget "iosAppTests" */;
+			buildPhases = (
+				AF70A01A2ED95431005A0B9E /* Sources */,
+				AF70A01B2ED95431005A0B9E /* Frameworks */,
+				AF70A01C2ED95431005A0B9E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AF70A0232ED95431005A0B9E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AF70A01F2ED95431005A0B9E /* iosAppTests */,
+			);
+			name = iosAppTests;
+			packageProductDependencies = (
+				AF70A0302ED9556A005A0B9E /* NovaCrypto */,
+			);
+			productName = iosAppTests;
+			productReference = AF70A01E2ED95431005A0B9E /* iosAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		EF94B431A8D14B7FA6D23FA2 /* iosApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 61394BFD456440F23496654E /* Build configuration list for PBXNativeTarget "iosApp" */;
@@ -85,6 +151,7 @@
 			);
 			name = iosApp;
 			packageProductDependencies = (
+				AF70A0012ED94D92005A0B9E /* NovaCrypto */,
 			);
 			productName = iosApp;
 			productReference = 9E5ED8605C72F0FA6921888E /* CladSigner.app */;
@@ -97,9 +164,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1620;
+				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					AF70A01D2ED95431005A0B9E = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = EF94B431A8D14B7FA6D23FA2;
+					};
 					EF94B431A8D14B7FA6D23FA2 = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -114,18 +185,29 @@
 			);
 			mainGroup = 4E7ECE3EEA06B446EC7450C2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AF70A0002ED94D92005A0B9E /* XCRemoteSwiftPackageReference "Crypto-iOS" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DAAC840749B13491B34DC1A6 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				EF94B431A8D14B7FA6D23FA2 /* iosApp */,
+				AF70A01D2ED95431005A0B9E /* iosAppTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		423EDF49B5F55A4ACB329917 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AF70A01C2ED95431005A0B9E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -164,7 +246,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AF70A01A2ED95431005A0B9E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AF70A0232ED95431005A0B9E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EF94B431A8D14B7FA6D23FA2 /* iosApp */;
+			targetProxy = AF70A0222ED95431005A0B9E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		02DF3FA1D54C2F9725C868FC /* Debug */ = {
@@ -258,6 +355,48 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		AF70A0242ED95431005A0B9E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SGSC33SBKM;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(PLATFORM_NAME)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.wideas.clad.iosAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CladSigner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CladSigner";
+			};
+			name = Debug;
+		};
+		AF70A0252ED95431005A0B9E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SGSC33SBKM;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(PLATFORM_NAME)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.wideas.clad.iosAppTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CladSigner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CladSigner";
 			};
 			name = Release;
 		};
@@ -360,6 +499,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		AF70A0262ED95431005A0B9E /* Build configuration list for PBXNativeTarget "iosAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AF70A0242ED95431005A0B9E /* Debug */,
+				AF70A0252ED95431005A0B9E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E610DBE9C55612931B69ED90 /* Build configuration list for PBXProject "iosApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -370,6 +518,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AF70A0002ED94D92005A0B9E /* XCRemoteSwiftPackageReference "Crypto-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/novasamatech/Crypto-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AF70A0012ED94D92005A0B9E /* NovaCrypto */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF70A0002ED94D92005A0B9E /* XCRemoteSwiftPackageReference "Crypto-iOS" */;
+			productName = NovaCrypto;
+		};
+		AF70A0302ED9556A005A0B9E /* NovaCrypto */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF70A0002ED94D92005A0B9E /* XCRemoteSwiftPackageReference "Crypto-iOS" */;
+			productName = NovaCrypto;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 41DA56CC642F0FB8BAC67C9E /* Project object */;
 }

@@ -5,23 +5,21 @@ package tech.wideas.clad.crypto
  *
  * This is a stub implementation. Full signing will be completed in issue #23 (Transaction Signing Pipeline).
  *
- * **Required Setup:**
- * - Add to Podfile: `pod 'SubstrateSdk', :git => 'https://github.com/nova-wallet/substrate-sdk-ios.git'`
- * - Configure cinterop in `shared/build.gradle.kts`
- *
- * **Classes needed from SubstrateSdk:**
- * - `IRSigningWrapper` - Message signing
- * - `IRSignatureVerifier` - Signature verification
+ * **Implementation Notes:**
+ * - Use NovaCrypto's `SNSigner` for SR25519 signing
+ * - Use NovaCrypto's `EDSigner` for ED25519 signing
+ * - Use NovaCrypto's `SNSignatureVerifier` / `EDSignatureVerifier` for verification
+ * - Requires converting [Keypair] to NovaCrypto's internal keypair format
  *
  * Thread Safety: This class is NOT thread-safe.
  *
- * @see <a href="https://github.com/nova-wallet/substrate-sdk-ios">Nova SubstrateSdk (iOS)</a>
+ * @see <a href="https://github.com/novasamatech/Crypto-iOS">NovaCrypto (iOS)</a>
  */
 class IOSSigner : Signer {
 
     override fun sign(message: ByteArray, keypair: Keypair): ByteArray {
-        // TODO(#23): Implement using SubstrateSdk's IRSigningWrapper
-        throw NotImplementedError("iOS signing requires SubstrateSdk integration (issue #23)")
+        // TODO(#23): Implement using NovaCrypto's SNSigner/EDSigner
+        throw NotImplementedError("Signing will be implemented in issue #23")
     }
 
     override fun verify(
@@ -30,8 +28,8 @@ class IOSSigner : Signer {
         publicKey: ByteArray,
         keyType: KeyType
     ): Boolean {
-        // TODO(#23): Implement using SubstrateSdk's IRSignatureVerifier
-        throw NotImplementedError("iOS signature verification requires SubstrateSdk integration (issue #23)")
+        // TODO(#23): Implement using NovaCrypto's SNSignatureVerifier/EDSignatureVerifier
+        throw NotImplementedError("Signature verification will be implemented in issue #23")
     }
 }
 

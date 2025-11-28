@@ -24,6 +24,16 @@ kotlin {
             baseName = "Shared"
             isStatic = true
         }
+
+        // Configure cinterop for NovaCrypto (iOS crypto library)
+        iosTarget.compilations.getByName("main") {
+            cinterops {
+                val NovaCrypto by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/NovaCrypto.def"))
+                    includeDirs(project.file("src/nativeInterop/cinterop/headers"))
+                }
+            }
+        }
     }
     
     sourceSets {
