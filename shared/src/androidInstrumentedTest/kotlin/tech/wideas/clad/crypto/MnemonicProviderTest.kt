@@ -373,6 +373,82 @@ class MnemonicProviderTest {
         )
     }
 
+    /**
+     * CRITICAL TEST: Verifies Android produces the same ED25519 keypair as Substrate subkey.
+     * If this test fails, Android ED25519 wallets will NOT be recoverable on other platforms!
+     *
+     * Test vector from Substrate subkey documentation:
+     * `subkey inspect --scheme ed25519 "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"`
+     *
+     * This test ensures cross-platform compatibility with:
+     * - iOS (NovaCrypto) - tested in iosAppTests/MnemonicProviderTests.swift
+     * - Web wallets (polkadot.js)
+     * - Substrate CLI (subkey)
+     */
+    @Test
+    fun `known mnemonic produces expected ed25519 public key`() {
+        val testMnemonic = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"
+        val expectedPublicKeyHex = "1a0e2bf1e0195a1f5396c5fd209a620a48fe90f6f336d89c89405a0183a857a3"
+
+        val keypair = provider.toKeypair(
+            mnemonic = testMnemonic,
+            passphrase = "",
+            keyType = KeyType.ED25519,
+            derivationPath = ""
+        )
+
+        val actualPublicKeyHex = keypair.publicKey.toHexString()
+
+        assertEquals(
+            expectedPublicKeyHex,
+            actualPublicKeyHex,
+            """
+            CROSS-PLATFORM DETERMINISM FAILURE!
+
+            The ED25519 public key derived from the test mnemonic does not match
+            the expected value from Substrate subkey.
+
+            Mnemonic: "$testMnemonic"
+            Expected: $expectedPublicKeyHex
+            Actual:   $actualPublicKeyHex
+
+            This means Android will generate DIFFERENT ED25519 addresses than iOS/web wallets
+            from the same recovery phrase, breaking wallet portability!
+            """.trimIndent()
+        )
+    }
+
+    /**
+     * Verifies Android produces the correct SS58 address from a known mnemonic using ED25519.
+     * This complements the ED25519 public key test above and validates the full
+     * mnemonic → keypair → address pipeline for ED25519.
+     */
+    @Test
+    fun `known mnemonic produces expected ed25519 ss58 address`() {
+        val testMnemonic = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"
+        val expectedAddress = "5CesK3uTmn4NGfD3oyGBd1jrp4EfRyYdtqL3ERe9SXv8jUHb"
+
+        val keypair = provider.toKeypair(
+            mnemonic = testMnemonic,
+            passphrase = "",
+            keyType = KeyType.ED25519,
+            derivationPath = ""
+        )
+
+        val actualAddress = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
+
+        assertEquals(
+            expectedAddress,
+            actualAddress,
+            """
+            ED25519 SS58 address mismatch!
+
+            Expected: $expectedAddress
+            Actual:   $actualAddress
+            """.trimIndent()
+        )
+    }
+
     // ============================================================================
     // Helper Methods
     // ============================================================================
