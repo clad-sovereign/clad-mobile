@@ -57,17 +57,23 @@ class AndroidMnemonicProvider : MnemonicProvider {
             KeyType.ED25519 -> EncryptionType.ED25519
         }
 
+        // Nova SDK's SubstrateKeypairFactory.generate() expects a 32-byte mini-secret for sr25519,
+        // not the full 64-byte BIP39 seed. Extract the first 32 bytes (mini-secret) from the
+        // full seed. This matches the iOS implementation and Substrate's mini_secret_from_entropy.
+        // See: https://wiki.polkadot.network/docs/learn-cryptography#keypairs-and-signing
+        val miniSecret = result.seed.copyOfRange(0, 32)
+
         // Nova SDK requires derivation path to be empty list (not empty string) when no derivation
         val novaKeypair = if (derivationPath.isEmpty()) {
             SubstrateKeypairFactory.generate(
                 encryptionType = encryptionType,
-                seed = result.seed,
+                seed = miniSecret,
                 junctions = emptyList()
             )
         } else {
             SubstrateKeypairFactory.generate(
                 encryptionType = encryptionType,
-                seed = result.seed,
+                seed = miniSecret,
                 derivationPath = derivationPath
             )
         }
