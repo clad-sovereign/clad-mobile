@@ -1,0 +1,51 @@
+{
+  "originHash" : "5957a59f5402852c266007da11295fea0b954ba22984c5e83049c8c0fcac9a8e",
+  "pins" : [
+    {
+      "identity" : "blake2.c",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/novasamatech/blake2.c",
+      "state" : {
+        "revision" : "7095d1e2dcc892859d4ab8d4b50f102e44e1a773",
+        "version" : "0.1.1"
+      }
+    },
+    {
+      "identity" : "crypto-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/novasamatech/Crypto-iOS",
+      "state" : {
+        "revision" : "1b0a9d53cb171b7241ad238a64d83d0e16510d88",
+        "version" : "0.4.0"
+      }
+    },
+    {
+      "identity" : "ed25519.c",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/novasamatech/ed25519.c.git",
+      "state" : {
+        "revision" : "204195f8068fe17e2db8b6fe35ae05ea91f09519",
+        "version" : "0.1.2"
+      }
+    },
+    {
+      "identity" : "secp256k1.c",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/novasamatech/secp256k1.c.git",
+      "state" : {
+        "revision" : "ecbbc343d9895e00627fe932bdb983d5e48681d8",
+        "version" : "0.1.4"
+      }
+    },
+    {
+      "identity" : "sr25519.c",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/novasamatech/sr25519.c.git",
+      "state" : {
+        "revision" : "a7b119eff15c724982c4641d279a90f2548d968c",
+        "version" : "0.2.0"
+      }
+    }
+  ],
+  "version" : 3
+}
