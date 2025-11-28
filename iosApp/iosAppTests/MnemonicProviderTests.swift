@@ -174,9 +174,9 @@ final class MnemonicProviderTests: XCTestCase {
     /// Test vector from Substrate subkey documentation:
     /// `subkey inspect "caution juice atom organ advance problem want pledge someone senior holiday very"`
     ///
-    /// NOTE: These values are duplicated from CrossPlatformDeterminismTest.TestVector1 in Kotlin
-    /// because Swift cannot import Kotlin test sources. The single source of truth is the Kotlin file.
-    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt for Android equivalent.
+    /// NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (shared/commonTest).
+    /// Duplication required because Swift cannot import Kotlin test sources.
+    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt (Android equivalent)
     func testKnownMnemonicProducesExpectedSr25519PublicKey() {
         // Values from CrossPlatformDeterminismTest.TestVector1
         let testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"
@@ -214,8 +214,9 @@ final class MnemonicProviderTests: XCTestCase {
     /// This complements the SR25519 public key test above and validates the full
     /// mnemonic → keypair → address pipeline for SR25519.
     ///
-    /// NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (Kotlin).
-    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt for Android equivalent.
+    /// NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (shared/commonTest).
+    /// Duplication required because Swift cannot import Kotlin test sources.
+    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt (Android equivalent)
     func testKnownMnemonicProducesExpectedSr25519Ss58Address() {
         // Values from CrossPlatformDeterminismTest.TestVector1
         let testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"

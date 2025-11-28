@@ -304,10 +304,9 @@ class MnemonicProviderTest {
      * Test vector from Substrate subkey documentation:
      * `subkey inspect "caution juice atom organ advance problem want pledge someone senior holiday very"`
      *
-     * NOTE: These values are duplicated from CrossPlatformDeterminismTest.TestVector1 (commonTest)
-     * because androidInstrumentedTest cannot access commonTest sources. The single source of truth
-     * is CrossPlatformDeterminismTest.TestVector1.
-     * See also: iosAppTests/MnemonicProviderTests.swift for iOS equivalent.
+     * NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (shared/commonTest).
+     * Duplication required because androidInstrumentedTest cannot access commonTest sources.
+     * See also: iosApp/iosAppTests/MnemonicProviderTests.swift (iOS equivalent)
      *
      * This test ensures cross-platform compatibility with:
      * - iOS (NovaCrypto) - tested in iosAppTests/MnemonicProviderTests.swift
@@ -353,8 +352,9 @@ class MnemonicProviderTest {
      * This complements the SR25519 public key test above and validates the full
      * mnemonic → keypair → address pipeline for SR25519.
      *
-     * NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (commonTest).
-     * See also: iosAppTests/MnemonicProviderTests.swift for iOS equivalent.
+     * NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (shared/commonTest).
+     * Duplication required because androidInstrumentedTest cannot access commonTest sources.
+     * See also: iosApp/iosAppTests/MnemonicProviderTests.swift (iOS equivalent)
      */
     @Test
     fun `known mnemonic produces expected sr25519 ss58 address`() {
