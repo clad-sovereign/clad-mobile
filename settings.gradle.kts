@@ -25,6 +25,8 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        // JitPack for Nova SDK transitive dependencies (NovaCrypto libraries)
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
