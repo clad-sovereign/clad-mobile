@@ -1,16 +1,24 @@
 package tech.wideas.clad.crypto
 
 /**
- * iOS implementation of MnemonicProvider.
+ * iOS implementation of [MnemonicProvider].
  *
- * TODO: Integrate with Nova SubstrateSdk via CocoaPods/cinterop
- * Pod: SubstrateSdk
- * Classes needed: IRMnemonicCreator, IRCryptoType, IRKeypairFactory
+ * This is a stub implementation. Full integration requires Nova SubstrateSdk via CocoaPods/cinterop.
  *
- * Setup required:
- * 1. Add Podfile with: pod 'SubstrateSdk', :git => 'https://github.com/nova-wallet/substrate-sdk-ios.git'
- * 2. Create cinterop .def file for SubstrateSdk
- * 3. Configure cinterop in shared/build.gradle.kts
+ * **Required Setup:**
+ * 1. Add to Podfile: `pod 'SubstrateSdk', :git => 'https://github.com/nova-wallet/substrate-sdk-ios.git'`
+ * 2. Create cinterop `.def` file for SubstrateSdk
+ * 3. Configure cinterop in `shared/build.gradle.kts`
+ *
+ * **Classes needed from SubstrateSdk:**
+ * - `IRMnemonicCreator` - Mnemonic generation and validation
+ * - `IRCryptoType` - Key type selection (sr25519, ed25519)
+ * - `IRKeypairFactory` - Keypair derivation
+ *
+ * Thread Safety: This class is NOT thread-safe. Create separate instances
+ * or synchronize access externally.
+ *
+ * @see <a href="https://github.com/nova-wallet/substrate-sdk-ios">Nova SubstrateSdk (iOS)</a>
  */
 class IOSMnemonicProvider : MnemonicProvider {
 

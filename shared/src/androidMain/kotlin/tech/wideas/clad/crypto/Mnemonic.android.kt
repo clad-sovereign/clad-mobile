@@ -7,7 +7,16 @@ import io.novasama.substrate_sdk_android.encrypt.EncryptionType
 import io.novasama.substrate_sdk_android.encrypt.seed.substrate.SubstrateSeedFactory
 
 /**
- * Android implementation of MnemonicProvider using Nova Substrate SDK.
+ * Android implementation of [MnemonicProvider] using Nova Substrate SDK.
+ *
+ * This implementation uses the `substrate-sdk-android` library which provides
+ * native Rust-based cryptographic operations via JNI for sr25519 (Schnorrkel).
+ *
+ * Thread Safety: This class is NOT thread-safe. The underlying Nova SDK
+ * operations may not be safe for concurrent use. Create separate instances
+ * or synchronize access externally.
+ *
+ * @see <a href="https://github.com/novasamatech/substrate-sdk-android">Nova Substrate SDK</a>
  */
 class AndroidMnemonicProvider : MnemonicProvider {
 

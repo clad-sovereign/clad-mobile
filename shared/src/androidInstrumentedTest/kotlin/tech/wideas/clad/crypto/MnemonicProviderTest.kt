@@ -64,11 +64,17 @@ class MnemonicProviderTest {
     }
 
     @Test
+    fun `validate returns invalid for empty string`() {
+        val result = provider.validate("")
+        assertIs<MnemonicValidationResult.Invalid>(result, "Empty string should be invalid")
+    }
+
+    @Test
     fun `toSeed produces valid seed`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
         val seed = provider.toSeed(mnemonic)
-        // Substrate mini-secret seed is 32 bytes, but full entropy can be 64 bytes
-        assertTrue(seed.size in 32..64, "Seed should be 32-64 bytes, got ${seed.size}")
+        // Nova SDK's SubstrateSeedFactory.deriveSeed returns 64 bytes (FULL_SEED_LENGTH)
+        assertEquals(64, seed.size, "Seed should be 64 bytes, got ${seed.size}")
     }
 
     @Test
@@ -129,6 +135,161 @@ class MnemonicProviderTest {
         assertTrue(
             !keypair1.publicKey.contentEquals(keypair2.publicKey),
             "Different mnemonics should produce different public keys"
+        )
+    }
+
+    // ============================================================================
+    // Derivation Path Tests
+    // ============================================================================
+
+    @Test
+    fun `toKeypair with hard derivation path produces different keypair`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val masterKeypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val derivedKeypair = provider.toKeypair(
+            mnemonic,
+            keyType = KeyType.SR25519,
+            derivationPath = "//polkadot"
+        )
+
+        assertTrue(
+            !masterKeypair.publicKey.contentEquals(derivedKeypair.publicKey),
+            "Hard derivation path should produce different public key"
+        )
+    }
+
+    @Test
+    fun `toKeypair with soft derivation path produces different keypair`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val masterKeypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val derivedKeypair = provider.toKeypair(
+            mnemonic,
+            keyType = KeyType.SR25519,
+            derivationPath = "/soft"
+        )
+
+        assertTrue(
+            !masterKeypair.publicKey.contentEquals(derivedKeypair.publicKey),
+            "Soft derivation path should produce different public key"
+        )
+    }
+
+    @Test
+    fun `toKeypair with mixed derivation path produces different keypair`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val masterKeypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val derivedKeypair = provider.toKeypair(
+            mnemonic,
+            keyType = KeyType.SR25519,
+            derivationPath = "//hard/soft"
+        )
+
+        assertTrue(
+            !masterKeypair.publicKey.contentEquals(derivedKeypair.publicKey),
+            "Mixed derivation path should produce different public key"
+        )
+    }
+
+    @Test
+    fun `toKeypair derivation path is deterministic`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val derivedKeypair1 = provider.toKeypair(
+            mnemonic,
+            keyType = KeyType.SR25519,
+            derivationPath = "//polkadot//staking"
+        )
+        val derivedKeypair2 = provider.toKeypair(
+            mnemonic,
+            keyType = KeyType.SR25519,
+            derivationPath = "//polkadot//staking"
+        )
+
+        assertTrue(
+            derivedKeypair1.publicKey.contentEquals(derivedKeypair2.publicKey),
+            "Same derivation path should produce same public key"
+        )
+    }
+
+    @Test
+    fun `different derivation paths produce different keypairs`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val keypair1 = provider.toKeypair(
+            mnemonic,
+            keyType = KeyType.SR25519,
+            derivationPath = "//polkadot"
+        )
+        val keypair2 = provider.toKeypair(
+            mnemonic,
+            keyType = KeyType.SR25519,
+            derivationPath = "//kusama"
+        )
+
+        assertTrue(
+            !keypair1.publicKey.contentEquals(keypair2.publicKey),
+            "Different derivation paths should produce different public keys"
+        )
+    }
+
+    // ============================================================================
+    // Passphrase Edge Case Tests
+    // ============================================================================
+
+    @Test
+    fun `toSeed with unicode passphrase works`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val seedWithUnicode = provider.toSeed(mnemonic, "密码パスワード🔐")
+        val seedWithAscii = provider.toSeed(mnemonic, "password")
+
+        assertEquals(64, seedWithUnicode.size, "Unicode passphrase seed should be 64 bytes")
+        assertTrue(
+            !seedWithUnicode.contentEquals(seedWithAscii),
+            "Unicode passphrase should produce different seed than ASCII"
+        )
+    }
+
+    @Test
+    fun `toSeed with very long passphrase works`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val longPassphrase = "a".repeat(1000)
+        val seedWithLongPass = provider.toSeed(mnemonic, longPassphrase)
+
+        assertEquals(64, seedWithLongPass.size, "Long passphrase seed should be 64 bytes")
+    }
+
+    @Test
+    fun `toSeed with whitespace passphrase is distinct from empty`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val seedEmpty = provider.toSeed(mnemonic, "")
+        val seedWhitespace = provider.toSeed(mnemonic, "   ")
+
+        assertTrue(
+            !seedEmpty.contentEquals(seedWhitespace),
+            "Whitespace passphrase should produce different seed than empty"
+        )
+    }
+
+    @Test
+    fun `toKeypair with unicode passphrase produces valid keypair`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val keypair = provider.toKeypair(
+            mnemonic,
+            passphrase = "日本語パスフレーズ",
+            keyType = KeyType.SR25519
+        )
+
+        assertEquals(32, keypair.publicKey.size, "Public key should be 32 bytes")
+        assertTrue(keypair.privateKey.isNotEmpty(), "Private key should not be empty")
+    }
+
+    @Test
+    fun `toKeypair passphrase is case sensitive`() {
+        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
+        val keypairLower = provider.toKeypair(mnemonic, passphrase = "password", keyType = KeyType.SR25519)
+        val keypairUpper = provider.toKeypair(mnemonic, passphrase = "PASSWORD", keyType = KeyType.SR25519)
+
+        assertTrue(
+            !keypairLower.publicKey.contentEquals(keypairUpper.publicKey),
+            "Passphrase should be case-sensitive"
         )
     }
 }

@@ -1,19 +1,26 @@
 package tech.wideas.clad.crypto
 
 /**
- * iOS implementation of Signer.
+ * iOS implementation of [Signer].
  *
- * Note: Full signing implementation will be completed in issue #23 (Transaction Signing Pipeline).
- * This stub provides the expect/actual structure for now.
+ * This is a stub implementation. Full signing will be completed in issue #23 (Transaction Signing Pipeline).
  *
- * TODO: Integrate with Nova SubstrateSdk via CocoaPods/cinterop
- * Pod: SubstrateSdk
- * Classes needed: IRSigningWrapper, IRSignatureVerifier
+ * **Required Setup:**
+ * - Add to Podfile: `pod 'SubstrateSdk', :git => 'https://github.com/nova-wallet/substrate-sdk-ios.git'`
+ * - Configure cinterop in `shared/build.gradle.kts`
+ *
+ * **Classes needed from SubstrateSdk:**
+ * - `IRSigningWrapper` - Message signing
+ * - `IRSignatureVerifier` - Signature verification
+ *
+ * Thread Safety: This class is NOT thread-safe.
+ *
+ * @see <a href="https://github.com/nova-wallet/substrate-sdk-ios">Nova SubstrateSdk (iOS)</a>
  */
 class IOSSigner : Signer {
 
     override fun sign(message: ByteArray, keypair: Keypair): ByteArray {
-        // TODO: Implement in issue #23 using SubstrateSdk's IRSigningWrapper
+        // TODO(#23): Implement using SubstrateSdk's IRSigningWrapper
         throw NotImplementedError("iOS signing requires SubstrateSdk integration (issue #23)")
     }
 
@@ -23,7 +30,7 @@ class IOSSigner : Signer {
         publicKey: ByteArray,
         keyType: KeyType
     ): Boolean {
-        // TODO: Implement in issue #23 using SubstrateSdk's IRSignatureVerifier
+        // TODO(#23): Implement using SubstrateSdk's IRSignatureVerifier
         throw NotImplementedError("iOS signature verification requires SubstrateSdk integration (issue #23)")
     }
 }

@@ -13,7 +13,13 @@ package tech.wideas.clad.crypto
  * 3. Configure cinterop in shared/build.gradle.kts
  */
 actual object Ss58 {
+    /**
+     * @throws IllegalArgumentException if publicKey is not exactly [PUBLIC_KEY_SIZE] bytes.
+     */
     actual fun encode(publicKey: ByteArray, networkPrefix: Short): String {
+        require(publicKey.size == PUBLIC_KEY_SIZE) {
+            "Public key must be exactly $PUBLIC_KEY_SIZE bytes, got ${publicKey.size}"
+        }
         // TODO: Use SubstrateSdk's SS58AddressFactory.encode()
         throw NotImplementedError("iOS SS58 encoding requires SubstrateSdk integration")
     }

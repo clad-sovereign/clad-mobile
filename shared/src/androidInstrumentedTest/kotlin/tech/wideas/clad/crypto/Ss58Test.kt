@@ -4,11 +4,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
  * Instrumented tests for SS58 address encoding on Android.
+ *
  * These tests require running on a device/emulator because the Nova SDK
  * uses native (JNI/Rust) code for cryptographic operations.
  */
@@ -22,7 +24,7 @@ class Ss58Test {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
         val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
 
-        val address = Ss58.encode(keypair.publicKey, networkPrefix = 42)
+        val address = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
 
         assertTrue(address.isNotBlank(), "Address should not be blank")
         assertTrue(address.length > 40, "SS58 address should be longer than 40 characters")
@@ -33,9 +35,9 @@ class Ss58Test {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
         val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
 
-        val genericAddress = Ss58.encode(keypair.publicKey, networkPrefix = 42) // Generic Substrate
-        val polkadotAddress = Ss58.encode(keypair.publicKey, networkPrefix = 0)  // Polkadot
-        val kusamaAddress = Ss58.encode(keypair.publicKey, networkPrefix = 2)    // Kusama
+        val genericAddress = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
+        val polkadotAddress = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.POLKADOT)
+        val kusamaAddress = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.KUSAMA)
 
         assertTrue(
             genericAddress != polkadotAddress,
@@ -48,26 +50,42 @@ class Ss58Test {
     }
 
     @Test
+    fun `encode throws for invalid public key size`() {
+        val tooShort = ByteArray(31) { 0 }
+        val tooLong = ByteArray(33) { 0 }
+        val empty = ByteArray(0)
+
+        assertFailsWith<IllegalArgumentException>("Should reject 31-byte key") {
+            Ss58.encode(tooShort)
+        }
+        assertFailsWith<IllegalArgumentException>("Should reject 33-byte key") {
+            Ss58.encode(tooLong)
+        }
+        assertFailsWith<IllegalArgumentException>("Should reject empty key") {
+            Ss58.encode(empty)
+        }
+    }
+
+    @Test
     fun `decode extracts correct public key and prefix`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
         val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
-        val networkPrefix: Short = 42
 
-        val address = Ss58.encode(keypair.publicKey, networkPrefix)
+        val address = Ss58.encode(keypair.publicKey, NetworkPrefix.GENERIC_SUBSTRATE)
         val (decodedPublicKey, decodedPrefix) = Ss58.decode(address)
 
         assertTrue(
             decodedPublicKey.contentEquals(keypair.publicKey),
             "Decoded public key should match original"
         )
-        assertEquals(networkPrefix, decodedPrefix, "Decoded prefix should match original")
+        assertEquals(NetworkPrefix.GENERIC_SUBSTRATE, decodedPrefix, "Decoded prefix should match original")
     }
 
     @Test
     fun `isValid returns true for valid address`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
         val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
-        val address = Ss58.encode(keypair.publicKey, networkPrefix = 42)
+        val address = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
 
         assertTrue(Ss58.isValid(address), "Encoded address should be valid")
     }
@@ -85,7 +103,7 @@ class Ss58Test {
         val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
 
         val address = keypair.toSs58Address()
-        val directAddress = Ss58.encode(keypair.publicKey, networkPrefix = 42)
+        val directAddress = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
 
         assertEquals(address, directAddress, "Convenience method should match direct call")
     }
@@ -97,12 +115,12 @@ class Ss58Test {
         val alicePublicKey = hexToBytes("d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d")
         val expectedAliceAddress = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
 
-        val encodedAddress = Ss58.encode(alicePublicKey, networkPrefix = 42)
+        val encodedAddress = Ss58.encode(alicePublicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
         assertEquals(expectedAliceAddress, encodedAddress, "Alice's address should match test vector")
 
         val (decodedKey, prefix) = Ss58.decode(expectedAliceAddress)
         assertTrue(decodedKey.contentEquals(alicePublicKey), "Decoded key should match Alice's public key")
-        assertEquals(42.toShort(), prefix, "Prefix should be 42")
+        assertEquals(NetworkPrefix.GENERIC_SUBSTRATE, prefix, "Prefix should be GENERIC_SUBSTRATE (42)")
     }
 
     private fun hexToBytes(hex: String): ByteArray {
