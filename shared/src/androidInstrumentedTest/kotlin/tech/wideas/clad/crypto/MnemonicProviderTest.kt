@@ -380,6 +380,11 @@ class MnemonicProviderTest {
      * Test vector from Substrate subkey documentation:
      * `subkey inspect --scheme ed25519 "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"`
      *
+     * NOTE: These values are duplicated from CrossPlatformDeterminismTest.TestVector2Ed25519 (commonTest)
+     * because androidInstrumentedTest cannot access commonTest sources. The single source of truth
+     * is CrossPlatformDeterminismTest.TestVector2Ed25519.
+     * See also: iosAppTests/MnemonicProviderTests.swift for iOS equivalent.
+     *
      * This test ensures cross-platform compatibility with:
      * - iOS (NovaCrypto) - tested in iosAppTests/MnemonicProviderTests.swift
      * - Web wallets (polkadot.js)
@@ -387,6 +392,7 @@ class MnemonicProviderTest {
      */
     @Test
     fun `known mnemonic produces expected ed25519 public key`() {
+        // Values from CrossPlatformDeterminismTest.TestVector2Ed25519
         val testMnemonic = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"
         val expectedPublicKeyHex = "1a0e2bf1e0195a1f5396c5fd209a620a48fe90f6f336d89c89405a0183a857a3"
 
@@ -422,9 +428,13 @@ class MnemonicProviderTest {
      * Verifies Android produces the correct SS58 address from a known mnemonic using ED25519.
      * This complements the ED25519 public key test above and validates the full
      * mnemonic → keypair → address pipeline for ED25519.
+     *
+     * NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector2Ed25519 (commonTest).
+     * See also: iosAppTests/MnemonicProviderTests.swift for iOS equivalent.
      */
     @Test
     fun `known mnemonic produces expected ed25519 ss58 address`() {
+        // Values from CrossPlatformDeterminismTest.TestVector2Ed25519
         val testMnemonic = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"
         val expectedAddress = "5CesK3uTmn4NGfD3oyGBd1jrp4EfRyYdtqL3ERe9SXv8jUHb"
 

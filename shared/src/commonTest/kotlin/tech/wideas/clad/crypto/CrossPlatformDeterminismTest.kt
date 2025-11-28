@@ -10,9 +10,19 @@ import kotlin.test.assertTrue
  * These tests verify that SS58 encoding/decoding works identically across platforms.
  * They use well-known test vectors that don't require native crypto libraries.
  *
- * NOTE: Keypair generation tests are in platform-specific test directories
- * (androidTest, iosTest) because they require native crypto libraries that
- * aren't available in JVM unit tests.
+ * ## Test Vector Architecture
+ *
+ * This file is the SINGLE SOURCE OF TRUTH for all cross-platform test vectors.
+ * Platform-specific tests (Android instrumented tests, iOS XCTests) must duplicate
+ * these values because:
+ * - androidInstrumentedTest cannot access commonTest sources (KMP source set isolation)
+ * - iOS/Swift cannot import Kotlin test sources
+ *
+ * When adding or modifying test vectors:
+ * 1. Update the constants in this file first
+ * 2. Update the duplicated values in:
+ *    - shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt
+ *    - iosApp/iosAppTests/MnemonicProviderTests.swift
  *
  * Test vectors sourced from:
  * - Substrate subkey documentation
@@ -21,8 +31,8 @@ import kotlin.test.assertTrue
 class CrossPlatformDeterminismTest {
 
     /**
-     * Test Vector: Alice's well-known public key and SS58 address
-     * This is used to verify SS58 encoding/decoding without native crypto.
+     * Test Vector: Alice's well-known public key and SS58 address.
+     * Used to verify SS58 encoding/decoding without native crypto.
      */
     object AliceTestVector {
         const val PUBLIC_KEY_HEX = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
@@ -30,8 +40,10 @@ class CrossPlatformDeterminismTest {
     }
 
     /**
-     * Test Vector 1 (SR25519): Expected output for mnemonic without derivation path
-     * Used by platform-specific tests to verify SR25519 keypair generation.
+     * Test Vector 1 (SR25519): Expected output for mnemonic without derivation path.
+     *
+     * SINGLE SOURCE OF TRUTH - duplicated in platform-specific tests.
+     * Source: `subkey inspect "caution juice atom organ advance problem want pledge someone senior holiday very"`
      */
     object TestVector1 {
         const val MNEMONIC = "caution juice atom organ advance problem want pledge someone senior holiday very"
@@ -40,11 +52,10 @@ class CrossPlatformDeterminismTest {
     }
 
     /**
-     * Test Vector 2 (ED25519): Expected output for mnemonic without derivation path
-     * Used by platform-specific tests to verify ED25519 keypair generation.
+     * Test Vector 2 (ED25519): Expected output for mnemonic without derivation path.
      *
-     * Source: Substrate subkey documentation
-     * `subkey inspect --scheme ed25519 "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"`
+     * SINGLE SOURCE OF TRUTH - duplicated in platform-specific tests.
+     * Source: `subkey inspect --scheme ed25519 "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"`
      */
     object TestVector2Ed25519 {
         const val MNEMONIC = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"

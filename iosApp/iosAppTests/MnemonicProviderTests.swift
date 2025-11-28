@@ -238,7 +238,12 @@ final class MnemonicProviderTests: XCTestCase {
     ///
     /// Test vector from Substrate subkey documentation:
     /// `subkey inspect --scheme ed25519 "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"`
+    ///
+    /// NOTE: These values are duplicated from CrossPlatformDeterminismTest.TestVector2Ed25519 in Kotlin
+    /// because Swift cannot import Kotlin test sources. The single source of truth is the Kotlin file.
+    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt for Android equivalent.
     func testKnownMnemonicProducesExpectedEd25519PublicKey() {
+        // Values from CrossPlatformDeterminismTest.TestVector2Ed25519
         let testMnemonic = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"
         let expectedPublicKeyHex = "1a0e2bf1e0195a1f5396c5fd209a620a48fe90f6f336d89c89405a0183a857a3"
 
@@ -270,7 +275,12 @@ final class MnemonicProviderTests: XCTestCase {
         )
     }
 
+    /// Verifies iOS produces the correct SS58 address from a known mnemonic using ED25519.
+    ///
+    /// NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector2Ed25519 (Kotlin).
+    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt for Android equivalent.
     func testKnownMnemonicProducesExpectedEd25519Ss58Address() {
+        // Values from CrossPlatformDeterminismTest.TestVector2Ed25519
         let testMnemonic = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"
         let expectedAddress = "5CesK3uTmn4NGfD3oyGBd1jrp4EfRyYdtqL3ERe9SXv8jUHb"
 
