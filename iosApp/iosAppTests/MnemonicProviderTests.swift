@@ -168,12 +168,17 @@ final class MnemonicProviderTests: XCTestCase {
 
     // MARK: - Cross-Platform Determinism Tests (Known Test Vectors)
 
-    /// CRITICAL TEST: Verifies iOS produces the same keypair as Substrate subkey.
+    /// CRITICAL TEST: Verifies iOS produces the same SR25519 keypair as Substrate subkey.
     /// If this test fails, iOS wallets will NOT be recoverable on other platforms!
     ///
     /// Test vector from Substrate subkey documentation:
     /// `subkey inspect "caution juice atom organ advance problem want pledge someone senior holiday very"`
+    ///
+    /// NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (shared/commonTest).
+    /// Duplication required because Swift cannot import Kotlin test sources.
+    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt (Android equivalent)
     func testKnownMnemonicProducesExpectedSr25519PublicKey() {
+        // Values from CrossPlatformDeterminismTest.TestVector1
         let testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"
         let expectedPublicKeyHex = "d6a3105d6768e956e9e5d41050ac29843f98561410d3a47f9dd5b3b227ab8746"
 
@@ -205,7 +210,15 @@ final class MnemonicProviderTests: XCTestCase {
         )
     }
 
-    func testKnownMnemonicProducesExpectedSs58Address() {
+    /// Verifies iOS produces the correct SS58 address from a known mnemonic using SR25519.
+    /// This complements the SR25519 public key test above and validates the full
+    /// mnemonic → keypair → address pipeline for SR25519.
+    ///
+    /// NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (shared/commonTest).
+    /// Duplication required because Swift cannot import Kotlin test sources.
+    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt (Android equivalent)
+    func testKnownMnemonicProducesExpectedSr25519Ss58Address() {
+        // Values from CrossPlatformDeterminismTest.TestVector1
         let testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"
         let expectedAddress = "5Gv8YYFu8H1btvmrJy9FjjAWfb99wrhV3uhPFoNEr918utyR"
 

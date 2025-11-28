@@ -298,11 +298,15 @@ class MnemonicProviderTest {
     // ============================================================================
 
     /**
-     * CRITICAL TEST: Verifies Android produces the same keypair as Substrate subkey.
+     * CRITICAL TEST: Verifies Android produces the same SR25519 keypair as Substrate subkey.
      * If this test fails, Android wallets will NOT be recoverable on other platforms!
      *
      * Test vector from Substrate subkey documentation:
      * `subkey inspect "caution juice atom organ advance problem want pledge someone senior holiday very"`
+     *
+     * NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (shared/commonTest).
+     * Duplication required because androidInstrumentedTest cannot access commonTest sources.
+     * See also: iosApp/iosAppTests/MnemonicProviderTests.swift (iOS equivalent)
      *
      * This test ensures cross-platform compatibility with:
      * - iOS (NovaCrypto) - tested in iosAppTests/MnemonicProviderTests.swift
@@ -311,6 +315,7 @@ class MnemonicProviderTest {
      */
     @Test
     fun `known mnemonic produces expected sr25519 public key`() {
+        // Values from CrossPlatformDeterminismTest.TestVector1
         val testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"
         val expectedPublicKeyHex = "d6a3105d6768e956e9e5d41050ac29843f98561410d3a47f9dd5b3b227ab8746"
 
@@ -343,12 +348,17 @@ class MnemonicProviderTest {
     }
 
     /**
-     * Verifies Android produces the correct SS58 address from a known mnemonic.
-     * This complements the public key test above and validates the full
-     * mnemonic → keypair → address pipeline.
+     * Verifies Android produces the correct SS58 address from a known mnemonic using SR25519.
+     * This complements the SR25519 public key test above and validates the full
+     * mnemonic → keypair → address pipeline for SR25519.
+     *
+     * NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector1 (shared/commonTest).
+     * Duplication required because androidInstrumentedTest cannot access commonTest sources.
+     * See also: iosApp/iosAppTests/MnemonicProviderTests.swift (iOS equivalent)
      */
     @Test
-    fun `known mnemonic produces expected ss58 address`() {
+    fun `known mnemonic produces expected sr25519 ss58 address`() {
+        // Values from CrossPlatformDeterminismTest.TestVector1
         val testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"
         val expectedAddress = "5Gv8YYFu8H1btvmrJy9FjjAWfb99wrhV3uhPFoNEr918utyR"
 
