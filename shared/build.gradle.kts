@@ -50,6 +50,8 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.koin.android)
+            // Nova Substrate SDK for crypto operations (sr25519, ed25519, BIP39, SS58)
+            implementation(libs.nova.substrate.sdk.core)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
