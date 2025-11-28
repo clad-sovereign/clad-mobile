@@ -3,6 +3,7 @@ package tech.wideas.clad.crypto
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
+import tech.wideas.clad.TestUtils.toHexString
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
@@ -469,10 +470,4 @@ class MnemonicProviderTest {
         )
     }
 
-    // ============================================================================
-    // Helper Methods
-    // ============================================================================
-
-    private fun ByteArray.toHexString(): String =
-        joinToString("") { byte -> "%02x".format(byte) }
 }

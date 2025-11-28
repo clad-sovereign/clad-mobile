@@ -1,5 +1,7 @@
 package tech.wideas.clad.crypto
 
+import tech.wideas.clad.TestUtils.hexToBytes
+import tech.wideas.clad.TestUtils.toHexString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -147,22 +149,4 @@ class CrossPlatformDeterminismTest {
         )
     }
 
-    // ============================================================================
-    // Helper Functions
-    // ============================================================================
-
-    private fun hexToBytes(hex: String): ByteArray {
-        val cleanHex = hex.removePrefix("0x")
-        return ByteArray(cleanHex.length / 2) { i ->
-            cleanHex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
-        }
-    }
-
-    private fun ByteArray.toHexString(): String {
-        return joinToString("") { byte ->
-            val unsigned = byte.toInt() and 0xFF
-            val hex = unsigned.toString(16)
-            if (hex.length == 1) "0$hex" else hex
-        }
-    }
 }

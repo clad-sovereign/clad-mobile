@@ -3,6 +3,7 @@ package tech.wideas.clad.crypto
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Test
 import org.junit.runner.RunWith
+import tech.wideas.clad.TestUtils.hexToBytes
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -121,12 +122,5 @@ class Ss58Test {
         val (decodedKey, prefix) = Ss58.decode(expectedAliceAddress)
         assertTrue(decodedKey.contentEquals(alicePublicKey), "Decoded key should match Alice's public key")
         assertEquals(NetworkPrefix.GENERIC_SUBSTRATE, prefix, "Prefix should be GENERIC_SUBSTRATE (42)")
-    }
-
-    private fun hexToBytes(hex: String): ByteArray {
-        val cleanHex = hex.removePrefix("0x")
-        return ByteArray(cleanHex.length / 2) { i ->
-            cleanHex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
-        }
     }
 }
