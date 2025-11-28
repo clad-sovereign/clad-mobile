@@ -1,13 +1,9 @@
 package tech.wideas.clad.crypto
 
-import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.addressOf
-import kotlinx.cinterop.usePinned
 import novacrypto.SS58AddressFactory
-import platform.Foundation.NSData
-import platform.Foundation.create
-import platform.posix.memcpy
+import tech.wideas.clad.util.toByteArray
+import tech.wideas.clad.util.toNSData
 
 /**
  * iOS implementation of SS58 address encoding using NovaCrypto library.
@@ -70,32 +66,5 @@ actual object Ss58 {
         } catch (e: Exception) {
             false
         }
-    }
-}
-
-/**
- * Converts NSData to Kotlin ByteArray.
- */
-@OptIn(ExperimentalForeignApi::class)
-private fun NSData.toByteArray(): ByteArray {
-    val length = this.length.toInt()
-    if (length == 0) return ByteArray(0)
-
-    val bytes = ByteArray(length)
-    bytes.usePinned { pinned ->
-        memcpy(pinned.addressOf(0), this.bytes, this.length)
-    }
-    return bytes
-}
-
-/**
- * Converts Kotlin ByteArray to NSData.
- */
-@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
-private fun ByteArray.toNSData(): NSData {
-    if (this.isEmpty()) return NSData()
-
-    return this.usePinned { pinned ->
-        NSData.create(bytes = pinned.addressOf(0), length = this.size.toULong())
     }
 }

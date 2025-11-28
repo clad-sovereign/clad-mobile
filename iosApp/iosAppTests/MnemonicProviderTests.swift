@@ -166,6 +166,73 @@ final class MnemonicProviderTests: XCTestCase {
         XCTAssertFalse(byteArraysEqual(keypair1.publicKey, keypair2.publicKey), "Different mnemonics should produce different public keys")
     }
 
+    // MARK: - Cross-Platform Determinism Tests (Known Test Vectors)
+
+    /// CRITICAL TEST: Verifies iOS produces the same keypair as Substrate subkey.
+    /// If this test fails, iOS wallets will NOT be recoverable on other platforms!
+    ///
+    /// Test vector from Substrate subkey documentation:
+    /// `subkey inspect "caution juice atom organ advance problem want pledge someone senior holiday very"`
+    func testKnownMnemonicProducesExpectedSr25519PublicKey() {
+        let testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"
+        let expectedPublicKeyHex = "d6a3105d6768e956e9e5d41050ac29843f98561410d3a47f9dd5b3b227ab8746"
+
+        let keypair = provider.toKeypair(
+            mnemonic: testMnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: ""
+        )
+
+        let actualPublicKeyHex = kotlinByteArrayToHex(keypair.publicKey)
+
+        XCTAssertEqual(
+            actualPublicKeyHex,
+            expectedPublicKeyHex,
+            """
+            CROSS-PLATFORM DETERMINISM FAILURE!
+
+            The SR25519 public key derived from the test mnemonic does not match
+            the expected value from Substrate subkey.
+
+            Mnemonic: "\(testMnemonic)"
+            Expected: \(expectedPublicKeyHex)
+            Actual:   \(actualPublicKeyHex)
+
+            This means iOS will generate DIFFERENT addresses than Android/web wallets
+            from the same recovery phrase, breaking wallet portability!
+            """
+        )
+    }
+
+    func testKnownMnemonicProducesExpectedSs58Address() {
+        let testMnemonic = "caution juice atom organ advance problem want pledge someone senior holiday very"
+        let expectedAddress = "5Gv8YYFu8H1btvmrJy9FjjAWfb99wrhV3uhPFoNEr918utyR"
+
+        let keypair = provider.toKeypair(
+            mnemonic: testMnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: ""
+        )
+
+        let actualAddress = Ss58.shared.encode(
+            publicKey: keypair.publicKey,
+            networkPrefix: NetworkPrefix.shared.GENERIC_SUBSTRATE
+        )
+
+        XCTAssertEqual(
+            actualAddress,
+            expectedAddress,
+            """
+            SS58 address mismatch!
+
+            Expected: \(expectedAddress)
+            Actual:   \(actualAddress)
+            """
+        )
+    }
+
     // MARK: - Passphrase Tests
 
     func testToKeypairWithPassphraseProducesValidKeypair() {
@@ -209,5 +276,14 @@ final class MnemonicProviderTests: XCTestCase {
             }
         }
         return true
+    }
+
+    private func kotlinByteArrayToHex(_ byteArray: KotlinByteArray) -> String {
+        var hex = ""
+        for i in 0..<byteArray.size {
+            let byte = byteArray.get(index: i)
+            hex += String(format: "%02x", UInt8(bitPattern: byte))
+        }
+        return hex
     }
 }
