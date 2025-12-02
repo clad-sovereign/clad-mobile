@@ -17,12 +17,12 @@ import platform.Foundation.CFBridgingRetain
 import platform.Foundation.NSData
 import platform.Foundation.NSString
 import platform.Foundation.NSUTF8StringEncoding
-import platform.Foundation.create
 import platform.Foundation.dataUsingEncoding
 import platform.Security.SecItemAdd
 import platform.Security.SecItemCopyMatching
 import platform.Security.SecItemDelete
 import platform.Security.SecItemUpdate
+import platform.Security.errSecDuplicateItem
 import platform.Security.errSecItemNotFound
 import platform.Security.errSecSuccess
 import platform.Security.kSecAttrAccessible
@@ -32,9 +32,7 @@ import platform.Security.kSecAttrService
 import platform.Security.kSecClass
 import platform.Security.kSecClassGenericPassword
 import platform.Security.kSecMatchLimit
-import platform.Security.kSecMatchLimitAll
 import platform.Security.kSecMatchLimitOne
-import platform.Security.kSecReturnAttributes
 import platform.Security.kSecReturnData
 import platform.Security.kSecValueData
 import platform.posix.memcpy
@@ -59,11 +57,16 @@ class IOSSecureStorage : SecureStorage {
     companion object {
         private const val SERVICE_NAME = "tech.wideas.clad.securestorage"
 
-        // Keychain attribute short key for kSecAttrAccount
+        /**
+         * Short key returned by Keychain when querying with kSecReturnAttributes.
+         * Maps to [kSecAttrAccount]. Useful for parsing returned attribute dictionaries
+         * or debugging Keychain queries.
+         */
+        @Suppress("unused")
         private const val KEYCHAIN_ATTR_ACCOUNT = "acct"
     }
 
-    override suspend fun save(key: String, value: String) = withContext(Dispatchers.IO) {
+    override suspend fun save(key: String, value: String): Unit = withContext(Dispatchers.IO) {
         val data = value.toNSData()
 
         // Try to update existing item first
@@ -77,16 +80,27 @@ class IOSSecureStorage : SecureStorage {
             updateAttributes.toCFDictionary()
         )
 
-        if (updateStatus == errSecItemNotFound) {
-            // Item doesn't exist, add it
-            val addQuery = mapOf<Any?, Any?>(
-                kSecClass to kSecClassGenericPassword,
-                kSecAttrService to SERVICE_NAME,
-                kSecAttrAccount to key,
-                kSecValueData to data,
-                kSecAttrAccessible to kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-            )
-            SecItemAdd(addQuery.toCFDictionary(), null)
+        when {
+            updateStatus == errSecSuccess -> {
+                // Update succeeded
+            }
+            updateStatus == errSecItemNotFound -> {
+                // Item doesn't exist, add it
+                val addQuery = mapOf<Any?, Any?>(
+                    kSecClass to kSecClassGenericPassword,
+                    kSecAttrService to SERVICE_NAME,
+                    kSecAttrAccount to key,
+                    kSecValueData to data,
+                    kSecAttrAccessible to kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+                )
+                val addStatus = SecItemAdd(addQuery.toCFDictionary(), null)
+                if (addStatus != errSecSuccess && addStatus != errSecDuplicateItem) {
+                    throw IllegalStateException("Failed to save to Keychain: OSStatus $addStatus")
+                }
+            }
+            else -> {
+                throw IllegalStateException("Failed to update Keychain: OSStatus $updateStatus")
+            }
         }
     }
 
