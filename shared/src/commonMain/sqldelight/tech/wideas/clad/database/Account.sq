@@ -1,0 +1,67 @@
+-- Account table for storing non-sensitive account metadata.
+-- Sensitive data (keypairs) is stored in KeyStorage with biometric protection.
+
+CREATE TABLE Account (
+    -- Unique identifier (UUID v4 string)
+    id TEXT NOT NULL PRIMARY KEY,
+
+    -- User-defined display name for the account
+    label TEXT NOT NULL,
+
+    -- SS58-encoded public address (e.g., "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+    address TEXT NOT NULL UNIQUE,
+
+    -- Cryptographic key type: "SR25519" or "ED25519"
+    keyType TEXT NOT NULL,
+
+    -- Timestamp when account was created (epoch milliseconds)
+    createdAt INTEGER NOT NULL,
+
+    -- Timestamp when account was last used for signing (epoch milliseconds, nullable)
+    lastUsedAt INTEGER
+);
+
+-- Get all accounts ordered by creation time (newest first)
+selectAll:
+SELECT *
+FROM Account
+ORDER BY createdAt DESC;
+
+-- Get account by ID
+selectById:
+SELECT *
+FROM Account
+WHERE id = ?;
+
+-- Get account by address
+selectByAddress:
+SELECT *
+FROM Account
+WHERE address = ?;
+
+-- Insert a new account
+insert:
+INSERT INTO Account (id, label, address, keyType, createdAt, lastUsedAt)
+VALUES (?, ?, ?, ?, ?, ?);
+
+-- Update account label
+updateLabel:
+UPDATE Account
+SET label = ?
+WHERE id = ?;
+
+-- Update last used timestamp
+updateLastUsedAt:
+UPDATE Account
+SET lastUsedAt = ?
+WHERE id = ?;
+
+-- Delete account by ID
+deleteById:
+DELETE FROM Account
+WHERE id = ?;
+
+-- Count total accounts
+countAll:
+SELECT COUNT(*)
+FROM Account;

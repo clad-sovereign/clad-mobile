@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.skie)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -23,6 +24,8 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "Shared"
             isStatic = true
+            // Link SQLite3 for SQLDelight native driver
+            linkerOpts("-lsqlite3")
         }
 
         // Configure cinterop for NovaCrypto (iOS crypto library)
@@ -52,6 +55,9 @@ kotlin {
             implementation(compose.material3)
             // Material Kolor for cross-platform color generation
             implementation(libs.material.kolor)
+            // SQLDelight for local database
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.sqldelight.coroutines)
         }
         androidMain.dependencies {
             implementation(libs.androidx.biometric)
@@ -63,9 +69,13 @@ kotlin {
             implementation(libs.koin.android)
             // Nova Substrate SDK for crypto operations (sr25519, ed25519, BIP39, SS58)
             implementation(libs.nova.substrate.sdk.core)
+            // SQLDelight Android driver
+            implementation(libs.sqldelight.android.driver)
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            // SQLDelight Native driver for iOS
+            implementation(libs.sqldelight.native.driver)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -114,4 +124,12 @@ tasks.withType<Test> {
     // - SecureStorageTest
     // - SettingsRepositoryTest
     // - ConnectionViewModelTest
+}
+
+sqldelight {
+    databases {
+        create("CladDatabase") {
+            packageName.set("tech.wideas.clad.database")
+        }
+    }
 }
