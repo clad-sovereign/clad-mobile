@@ -28,16 +28,3 @@ actual class DriverFactory(private val context: Context) {
         )
     }
 }
-
-/**
- * Creates an in-memory SQLite driver for testing on Android.
- *
- * Note: This requires instrumented tests (androidTest) since AndroidSqliteDriver
- * needs a Context. For unit tests, use Robolectric or mock the driver.
- */
-actual fun createInMemoryDriver(): SqlDriver {
-    // This will only work in instrumented tests where we have access to a context
-    throw UnsupportedOperationException(
-        "In-memory driver for Android requires Context. Use instrumented tests."
-    )
-}

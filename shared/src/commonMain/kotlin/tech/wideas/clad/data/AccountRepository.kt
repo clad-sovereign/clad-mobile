@@ -122,6 +122,12 @@ class AccountRepository(private val database: CladDatabase) {
         address: String,
         keyType: KeyType
     ): AccountInfo = withContext(Dispatchers.IO) {
+        // Check for duplicate address before insert
+        val existing = queries.selectByAddress(address).executeAsOneOrNull()
+        if (existing != null) {
+            throw IllegalStateException("Account with address '$address' already exists")
+        }
+
         val id = Uuid.random().toString()
         val createdAt = currentTimeMillis()
 

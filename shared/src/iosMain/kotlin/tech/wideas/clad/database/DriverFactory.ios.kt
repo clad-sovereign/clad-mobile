@@ -30,7 +30,8 @@ actual class DriverFactory {
  * Creates an in-memory SQLite driver for testing on iOS.
  *
  * Uses SQLDelight's built-in in-memory driver support.
+ * This is internal and only accessible within the shared module for test helpers.
  */
-actual fun createInMemoryDriver(): SqlDriver {
+internal fun createInMemoryDriver(): SqlDriver {
     return inMemoryDriver(CladDatabase.Schema)
 }

@@ -19,15 +19,6 @@ expect class DriverFactory {
 }
 
 /**
- * Creates an in-memory SQLite driver for testing.
- *
- * Each platform provides its own implementation using in-memory database.
- *
- * @return Platform-specific in-memory SqlDriver instance
- */
-expect fun createInMemoryDriver(): SqlDriver
-
-/**
  * Database file name used across all platforms.
  */
 internal const val DATABASE_NAME = "clad.db"

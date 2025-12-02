@@ -26,7 +26,6 @@
 		9E5ED8605C72F0FA6921888E /* CladSigner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CladSigner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF70A01E2ED95431005A0B9E /* iosAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iosAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF70A02C2ED95543005A0B9E /* Shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Shared.framework; path = "../shared/build/xcode-frameworks/Debug/iphonesimulator18.5/Shared.framework"; sourceTree = "<group>"; };
-		AF76D6B52EDF5D6D0096DEDE /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk/usr/lib/libsqlite3.tbd; sourceTree = DEVELOPER_DIR; };
 		AF76D6B72EDF5E030096DEDE /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -96,7 +95,6 @@
 		AF70A02B2ED95543005A0B9E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				AF76D6B52EDF5D6D0096DEDE /* libsqlite3.tbd */,
 				AF76D6B72EDF5E030096DEDE /* libsqlite3.tbd */,
 				AF70A02C2ED95543005A0B9E /* Shared.framework */,
 			);
