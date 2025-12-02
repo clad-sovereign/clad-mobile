@@ -50,8 +50,9 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# AndroidX Security Crypto
--keep class androidx.security.crypto.** { *; }
+# Google Tink Crypto
+-keep class com.google.crypto.tink.** { *; }
+-dontwarn com.google.errorprone.annotations.**
 
 # AndroidX Biometric
 -keep class androidx.biometric.** { *; }
