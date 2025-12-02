@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		AF70A0022ED94D92005A0B9E /* NovaCrypto in Frameworks */ = {isa = PBXBuildFile; productRef = AF70A0012ED94D92005A0B9E /* NovaCrypto */; };
 		AF70A0312ED9556A005A0B9E /* NovaCrypto in Frameworks */ = {isa = PBXBuildFile; productRef = AF70A0302ED9556A005A0B9E /* NovaCrypto */; };
+		AF76D6B82EDF5E030096DEDE /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AF76D6B72EDF5E030096DEDE /* libsqlite3.tbd */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,6 +26,7 @@
 		9E5ED8605C72F0FA6921888E /* CladSigner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CladSigner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF70A01E2ED95431005A0B9E /* iosAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iosAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF70A02C2ED95543005A0B9E /* Shared.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Shared.framework; path = "../shared/build/xcode-frameworks/Debug/iphonesimulator18.5/Shared.framework"; sourceTree = "<group>"; };
+		AF76D6B72EDF5E030096DEDE /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -71,6 +73,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF76D6B82EDF5E030096DEDE /* libsqlite3.tbd in Frameworks */,
 				AF70A0022ED94D92005A0B9E /* NovaCrypto in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -92,6 +95,7 @@
 		AF70A02B2ED95543005A0B9E /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				AF76D6B72EDF5E030096DEDE /* libsqlite3.tbd */,
 				AF70A02C2ED95543005A0B9E /* Shared.framework */,
 			);
 			name = Frameworks;

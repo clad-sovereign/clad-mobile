@@ -3,7 +3,9 @@ package tech.wideas.clad.di
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import tech.wideas.clad.data.AccountRepository
 import tech.wideas.clad.data.SettingsRepository
+import tech.wideas.clad.database.CladDatabase
 import tech.wideas.clad.substrate.SubstrateClient
 
 /**
@@ -20,4 +22,12 @@ val commonModule = module {
 
     // SettingsRepository depends on SecureStorage
     singleOf(::SettingsRepository)
+
+    // CladDatabase - created from platform-specific DriverFactory
+    single {
+        CladDatabase(get())
+    }
+
+    // AccountRepository for account metadata persistence
+    singleOf(::AccountRepository)
 }

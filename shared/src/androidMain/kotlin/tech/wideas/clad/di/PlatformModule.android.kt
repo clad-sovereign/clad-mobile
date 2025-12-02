@@ -1,7 +1,9 @@
 package tech.wideas.clad.di
 
 import androidx.fragment.app.FragmentActivity
+import app.cash.sqldelight.db.SqlDriver
 import org.koin.dsl.module
+import tech.wideas.clad.database.DriverFactory
 import tech.wideas.clad.security.AndroidBiometricAuth
 import tech.wideas.clad.security.AndroidKeyStorage
 import tech.wideas.clad.security.AndroidSecureStorage
@@ -30,5 +32,10 @@ actual val platformModule = module {
     factory<KeyStorage> { params ->
         val activityProvider = params.get<() -> FragmentActivity>()
         AndroidKeyStorage(get(), activityProvider)
+    }
+
+    // SQLDelight driver for Android
+    single<SqlDriver> {
+        DriverFactory(get()).createDriver()
     }
 }
