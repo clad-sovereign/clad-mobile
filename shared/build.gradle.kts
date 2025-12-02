@@ -56,7 +56,6 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.biometric)
             implementation(libs.androidx.fragment.ktx)
-            implementation(libs.androidx.security.crypto)
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.google.tink)
             implementation(libs.ktor.client.okhttp)

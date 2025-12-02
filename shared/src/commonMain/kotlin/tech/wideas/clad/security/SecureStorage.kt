@@ -1,10 +1,14 @@
 package tech.wideas.clad.security
 
 /**
- * Secure storage interface for sensitive data (account keys, settings, etc.)
+ * Secure storage interface for app settings and non-biometric protected data.
+ *
  * Platform implementations:
- * - Android: EncryptedSharedPreferences
- * - iOS: Keychain Services
+ * - Android: DataStore + Tink (AES256-GCM encryption, Keystore-backed keys)
+ * - iOS: Keychain Services (kSecAttrAccessibleWhenUnlockedThisDeviceOnly)
+ *
+ * Note: This storage does NOT require biometric authentication.
+ * For biometric-protected cryptographic key storage, use [KeyStorage] instead.
  */
 interface SecureStorage {
     /**
