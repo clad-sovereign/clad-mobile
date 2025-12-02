@@ -61,6 +61,12 @@ class IOSKeyStorage : KeyStorage {
     companion object {
         private const val SERVICE_NAME = "tech.wideas.clad.keystorage"
         private const val KEYPAIR_PREFIX = "keypair_"
+
+        // Keychain attribute short key for kSecAttrAccount.
+        // When SecItemCopyMatching returns attributes via CFBridgingRelease,
+        // the dictionary uses these short string keys (stable since iOS 2.0).
+        // See: https://developer.apple.com/documentation/security/keychain_services/keychain_items/item_attribute_keys_and_values
+        private const val KEYCHAIN_ATTR_ACCOUNT = "acct"
     }
 
     override suspend fun isAvailable(): Boolean {
@@ -223,7 +229,7 @@ class IOSKeyStorage : KeyStorage {
                 @Suppress("UNCHECKED_CAST")
                 val items = CFBridgingRelease(result.value) as? List<Map<Any?, Any?>>
                 items?.mapNotNull { item ->
-                    val account = item["acct"] as? String
+                    val account = item[KEYCHAIN_ATTR_ACCOUNT] as? String
                     account?.removePrefix(KEYPAIR_PREFIX)
                 } ?: emptyList()
             } else {

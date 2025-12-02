@@ -3,6 +3,7 @@ package tech.wideas.clad.security
 import android.content.Context
 import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
+import android.util.Log
 import android.security.keystore.KeyProperties
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -51,10 +52,10 @@ class AndroidKeyStorage(
 ) : KeyStorage {
 
     companion object {
+        private const val TAG = "AndroidKeyStorage"
         private const val KEYSTORE_PROVIDER = "AndroidKeyStore"
         private const val KEY_ALIAS_PREFIX = "clad_biometric_key_"
         private const val GCM_TAG_LENGTH = 128
-        private const val GCM_IV_LENGTH = 12
 
         // DataStore keys
         private val ACCOUNT_IDS_KEY = stringSetPreferencesKey("account_ids")
@@ -246,8 +247,9 @@ class AndroidKeyStorage(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 try {
                     specBuilder.setIsStrongBoxBacked(true)
+                    Log.d(TAG, "StrongBox enabled for key: $keyAlias")
                 } catch (e: Exception) {
-                    // StrongBox not available, continue without it
+                    Log.d(TAG, "StrongBox not available, using TEE: ${e.message}")
                 }
             }
 
