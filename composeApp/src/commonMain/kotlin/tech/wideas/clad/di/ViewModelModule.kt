@@ -13,14 +13,14 @@ import tech.wideas.clad.ui.import.ImportViewModel
  * to support future ViewModels with assisted injection.
  */
 val viewModelModule = module {
-    viewModel {
+    viewModel<ConnectionViewModel> {
         ConnectionViewModel(
             substrateClient = get(),
             settingsRepository = get()
         )
     }
 
-    viewModel {
+    viewModel<AccountsViewModel> {
         AccountsViewModel(
             substrateClient = get(),
             accountRepository = get(),
@@ -28,7 +28,7 @@ val viewModelModule = module {
         )
     }
 
-    viewModel {
+    viewModel<ImportViewModel> {
         ImportViewModel(
             mnemonicProvider = get(),
             keyStorage = get(),

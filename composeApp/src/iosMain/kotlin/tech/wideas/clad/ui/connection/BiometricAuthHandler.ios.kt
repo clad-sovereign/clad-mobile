@@ -2,13 +2,12 @@ package tech.wideas.clad.ui.connection
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import tech.wideas.clad.security.BiometricAuth
 import tech.wideas.clad.security.BiometricResult
-import tech.wideas.clad.security.IOSBiometricAuth
+import tech.wideas.clad.security.createBiometricAuth
 
-actual class BiometricAuthHandler(
-    private val biometricAuth: BiometricAuth = IOSBiometricAuth()
-) {
+actual class BiometricAuthHandler {
+    private val biometricAuth = createBiometricAuth()
+
     actual suspend fun authenticate(
         title: String,
         subtitle: String,
