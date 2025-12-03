@@ -3,6 +3,7 @@
 
 # Clad Signer
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![CI](https://github.com/clad-sovereign/clad-mobile/workflows/CI/badge.svg)
 
 **Native mobile signing application for sovereign and emerging-market RWA tokenization on Polkadot/Substrate**  
