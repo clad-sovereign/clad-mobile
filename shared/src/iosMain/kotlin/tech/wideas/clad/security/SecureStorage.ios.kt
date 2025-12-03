@@ -1,5 +1,6 @@
 package tech.wideas.clad.security
 
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
@@ -64,6 +65,7 @@ interface KeychainHelperProtocol {
  * Must be set before Koin initialization.
  */
 object SecureStorageFactory {
+    @Volatile
     private var keychainHelper: KeychainHelperProtocol? = null
 
     fun setKeychainHelper(helper: KeychainHelperProtocol) {

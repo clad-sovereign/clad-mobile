@@ -1,12 +1,14 @@
 import Foundation
 import Security
 import Shared
+import os.log
 
 /// Swift Keychain helper that implements Kotlin's KeychainHelperProtocol.
 /// Calling Keychain APIs from Swift is more reliable than from Kotlin/Native.
 public class KeychainHelper: KeychainHelperProtocol {
 
     private let service: String
+    private let logger = Logger(subsystem: "tech.wideas.clad", category: "KeychainHelper")
 
     public init(service: String) {
         self.service = service
@@ -35,7 +37,7 @@ public class KeychainHelper: KeychainHelperProtocol {
         ]
 
         let status = SecItemAdd(addQuery as CFDictionary, nil)
-        print("🔵 (KeychainHelper) save('\(key)') status: \(status)")
+        logger.debug("save('\(key, privacy: .public)') status: \(status)")
         return status
     }
 
@@ -50,7 +52,7 @@ public class KeychainHelper: KeychainHelperProtocol {
 
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        print("🔵 (KeychainHelper) get('\(key)') status: \(status)")
+        logger.debug("get('\(key, privacy: .public)') status: \(status)")
 
         if status == errSecSuccess, let data = result as? Data {
             return String(data: data, encoding: .utf8)
@@ -66,7 +68,7 @@ public class KeychainHelper: KeychainHelperProtocol {
         ]
 
         let status = SecItemDelete(query as CFDictionary)
-        print("🔵 (KeychainHelper) delete('\(key)') status: \(status)")
+        logger.debug("delete('\(key, privacy: .public)') status: \(status)")
         return status
     }
 
@@ -88,7 +90,7 @@ public class KeychainHelper: KeychainHelperProtocol {
         ]
 
         let status = SecItemDelete(query as CFDictionary)
-        print("🔵 (KeychainHelper) clear() status: \(status)")
+        logger.debug("clear() status: \(status)")
         return status
     }
 }

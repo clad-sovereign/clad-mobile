@@ -7,10 +7,10 @@ import tech.wideas.clad.crypto.createMnemonicProvider
 import tech.wideas.clad.database.DriverFactory
 import tech.wideas.clad.security.BiometricAuth
 import tech.wideas.clad.security.IOSBiometricAuth
-import tech.wideas.clad.security.IOSKeyStorage
-import tech.wideas.clad.security.SecureStorageFactory
 import tech.wideas.clad.security.KeyStorage
+import tech.wideas.clad.security.KeyStorageFactory
 import tech.wideas.clad.security.SecureStorage
+import tech.wideas.clad.security.SecureStorageFactory
 
 /**
  * iOS-specific Koin module
@@ -26,9 +26,9 @@ actual val platformModule = module {
         IOSBiometricAuth()
     }
 
-    // KeyStorage with biometric protection
+    // KeyStorage with biometric protection (uses Swift BiometricKeychainHelper via factory)
     single<KeyStorage> {
-        IOSKeyStorage()
+        KeyStorageFactory.create()
     }
 
     // MnemonicProvider for BIP39 operations
