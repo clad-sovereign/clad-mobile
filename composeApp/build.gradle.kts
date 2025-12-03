@@ -15,15 +15,9 @@ kotlin {
         }
     }
 
-    listOf(
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "ComposeApp"
-            isStatic = true
-        }
-    }
+    // Note: No iOS targets in composeApp.
+    // iOS uses native SwiftUI (in iosApp/) with the Shared framework.
+    // This module is Android-only for Compose Multiplatform UI.
 
     sourceSets {
         androidMain.dependencies {
@@ -59,9 +53,6 @@ kotlin {
             implementation(libs.kotlin.test)
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
-        }
-        iosMain.dependencies {
-            // iOS-specific dependencies if needed
         }
     }
 }
