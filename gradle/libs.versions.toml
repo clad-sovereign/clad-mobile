@@ -6,6 +6,7 @@ android-targetSdk = "36"
 androidx-activity = "1.12.0"
 androidx-appcompat = "1.7.1"
 androidx-biometric = "1.4.0-alpha04"
+androidx-camera = "1.5.0-alpha06"
 androidx-core = "1.17.0"
 androidx-fragment = "1.8.9"
 androidx-espresso = "3.7.0"
@@ -23,6 +24,7 @@ turbine = "1.2.1"
 mockk = "1.14.6"
 kotlinxSerialization = "1.9.0"
 ktor = "3.3.3"
+mlkitBarcodeScanning = "17.3.0"
 navigationCompose = "2.9.1"
 skie = "0.10.8"
 materialKolor = "4.0.5"
@@ -73,6 +75,13 @@ sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sq
 sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
+# CameraX for QR scanning
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "androidx-camera" }
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "androidx-camera" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "androidx-camera" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "androidx-camera" }
+# ML Kit for barcode scanning
+mlkit-barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "mlkitBarcodeScanning" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

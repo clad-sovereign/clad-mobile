@@ -11,6 +11,7 @@ import co.touchlab.kermit.Severity
 import co.touchlab.kermit.platformLogWriter
 import org.koin.android.ext.koin.androidContext
 import org.koin.compose.KoinApplication
+import tech.wideas.clad.di.AndroidActivityHolder
 import tech.wideas.clad.di.commonModule
 import tech.wideas.clad.di.platformModule
 import tech.wideas.clad.di.viewModelModule
@@ -19,6 +20,9 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        // Register this activity with the holder for biometric prompts
+        AndroidActivityHolder.setActivity(this)
 
         // Configure Kermit logger for Android
         Logger.setLogWriters(platformLogWriter())
@@ -35,6 +39,12 @@ class MainActivity : FragmentActivity() {
                 App()
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clear the activity reference to prevent leaks
+        AndroidActivityHolder.setActivity(null)
     }
 }
 
