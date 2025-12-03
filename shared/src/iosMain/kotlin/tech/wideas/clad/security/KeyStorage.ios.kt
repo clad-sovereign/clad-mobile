@@ -1,6 +1,7 @@
 package tech.wideas.clad.security
 
 import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -10,10 +11,18 @@ import kotlinx.cinterop.value
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
+import platform.CoreFoundation.CFDictionaryAddValue
+import platform.CoreFoundation.CFDictionaryCreateMutable
 import platform.CoreFoundation.CFDictionaryRef
+import platform.CoreFoundation.CFTypeRef
+import platform.CoreFoundation.kCFBooleanFalse
+import platform.CoreFoundation.kCFBooleanTrue
+import platform.CoreFoundation.kCFTypeDictionaryKeyCallBacks
+import platform.CoreFoundation.kCFTypeDictionaryValueCallBacks
 import platform.Foundation.CFBridgingRelease
 import platform.Foundation.CFBridgingRetain
 import platform.Foundation.NSData
+import platform.Foundation.NSString
 import platform.Foundation.create
 import platform.LocalAuthentication.LAContext
 import platform.LocalAuthentication.LAPolicyDeviceOwnerAuthenticationWithBiometrics
@@ -254,11 +263,35 @@ class IOSKeyStorage : KeyStorage {
 
 /**
  * Convert a Map to CFDictionaryRef for Keychain APIs.
+ *
+ * Uses CFDictionaryCreateMutable and CFDictionaryAddValue directly.
+ * Keys are CFStringRef (from kSecClass, etc.), values are various CF/NS types.
  */
 @OptIn(ExperimentalForeignApi::class)
 private fun Map<Any?, Any?>.toCFDictionary(): CFDictionaryRef? {
-    @Suppress("UNCHECKED_CAST")
-    return CFBridgingRetain(this) as? CFDictionaryRef
+    if (isEmpty()) return null
+
+    val dict = CFDictionaryCreateMutable(
+        null,
+        size.toLong(),
+        kCFTypeDictionaryKeyCallBacks.ptr,
+        kCFTypeDictionaryValueCallBacks.ptr
+    ) ?: return null
+
+    for ((key, value) in this) {
+        if (key != null && value != null) {
+            // Keys are CFStringRef which can be cast directly to CFTypeRef
+            @Suppress("UNCHECKED_CAST")
+            val cfKey = key as CFTypeRef
+
+            // Values need bridging - they could be NSData, NSString, CFTypeRef, etc.
+            val cfValue = CFBridgingRetain(value)
+
+            CFDictionaryAddValue(dict, cfKey, cfValue)
+        }
+    }
+
+    return dict
 }
 
 /**

@@ -8,7 +8,7 @@ import tech.wideas.clad.database.DriverFactory
 import tech.wideas.clad.security.BiometricAuth
 import tech.wideas.clad.security.IOSBiometricAuth
 import tech.wideas.clad.security.IOSKeyStorage
-import tech.wideas.clad.security.IOSSecureStorage
+import tech.wideas.clad.security.SecureStorageFactory
 import tech.wideas.clad.security.KeyStorage
 import tech.wideas.clad.security.SecureStorage
 
@@ -16,9 +16,9 @@ import tech.wideas.clad.security.SecureStorage
  * iOS-specific Koin module
  */
 actual val platformModule = module {
-    // SecureStorage
+    // SecureStorage (uses Swift KeychainHelper via factory)
     single<SecureStorage> {
-        IOSSecureStorage()
+        SecureStorageFactory.create()
     }
 
     // BiometricAuth
