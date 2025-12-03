@@ -11,6 +11,14 @@ struct iOSApp: App {
         KermitLogger.Companion.shared.initialize(isDebug: false)
         #endif
 
+        // Set up Swift Keychain helpers for Kotlin storage classes
+        // Must be done BEFORE Koin initialization
+        let secureStorageHelper = KeychainHelper(service: "tech.wideas.clad.securestorage")
+        SecureStorageFactory.shared.setKeychainHelper(helper: secureStorageHelper)
+
+        let keyStorageHelper = BiometricKeychainHelper(service: "tech.wideas.clad.keystorage")
+        KeyStorageFactory.shared.setKeychainHelper(helper: keyStorageHelper)
+
         // Initialize Koin DI
         KoinInitializer.shared.initialize()
     }
