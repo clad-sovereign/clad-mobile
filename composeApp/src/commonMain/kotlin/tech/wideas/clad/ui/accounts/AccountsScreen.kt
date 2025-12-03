@@ -74,8 +74,10 @@ fun AccountsScreen(
                     }
                 )
             } else {
-                // Account not found, go back to list
-                viewModel.navigateToAccountList()
+                // Account not found, navigate back (use LaunchedEffect to avoid side-effect during composition)
+                LaunchedEffect(Unit) {
+                    viewModel.navigateToAccountList()
+                }
             }
         }
     }

@@ -99,6 +99,10 @@ class AccountsViewModel(
     fun deleteAccount(account: AccountInfo) {
         viewModelScope.launch {
             try {
+                // Clear active account if we're deleting the active one
+                if (_uiState.value.activeAccountId == account.id) {
+                    accountRepository.setActiveAccount(null)
+                }
                 // Delete keypair from secure storage (if exists)
                 keyStorage.deleteKeypair(account.id)
                 // Delete account metadata from database

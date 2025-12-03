@@ -1,5 +1,10 @@
 package tech.wideas.clad.ui.accounts
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -294,7 +299,11 @@ private fun AddressSection(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (showCopiedMessage) {
+                    AnimatedVisibility(
+                        visible = showCopiedMessage,
+                        enter = fadeIn() + slideInHorizontally { it },
+                        exit = fadeOut() + slideOutHorizontally { it }
+                    ) {
                         Text(
                             text = "Copied!",
                             style = MaterialTheme.typography.labelMedium,
