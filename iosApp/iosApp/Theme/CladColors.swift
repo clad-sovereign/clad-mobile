@@ -26,7 +26,9 @@ struct CladColors {
     struct ColorScheme {
         let background: Color
         let surface: Color
+        let surfaceVariant: Color
         let primary: Color
+        let primaryContainer: Color
         let onPrimary: Color
         let secondary: Color
         let onSecondary: Color

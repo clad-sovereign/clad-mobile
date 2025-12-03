@@ -248,4 +248,105 @@ class AccountRepositoryTest {
         assertNotNull(retrieved)
         assertEquals(KeyType.SR25519, retrieved.keyType)
     }
+
+    // ==================== Active Account Tests ====================
+
+    @Test
+    fun getActiveAccountId_returnsNullWhenNotSet() = runTest {
+        val activeId = repository.getActiveAccountId()
+        assertNull(activeId)
+    }
+
+    @Test
+    fun setActiveAccount_setsAndGetsActiveAccountId() = runTest {
+        val account = repository.create("Test", "5Address", KeyType.SR25519)
+
+        repository.setActiveAccount(account.id)
+
+        val activeId = repository.getActiveAccountId()
+        assertEquals(account.id, activeId)
+    }
+
+    @Test
+    fun setActiveAccount_clearsWhenSetToNull() = runTest {
+        val account = repository.create("Test", "5Address", KeyType.SR25519)
+        repository.setActiveAccount(account.id)
+
+        repository.setActiveAccount(null)
+
+        val activeId = repository.getActiveAccountId()
+        assertNull(activeId)
+    }
+
+    @Test
+    fun getActiveAccount_returnsAccountWhenSet() = runTest {
+        val account = repository.create("Test Account", "5Address", KeyType.SR25519)
+        repository.setActiveAccount(account.id)
+
+        val activeAccount = repository.getActiveAccount()
+
+        assertNotNull(activeAccount)
+        assertEquals(account.id, activeAccount.id)
+        assertEquals("Test Account", activeAccount.label)
+    }
+
+    @Test
+    fun getActiveAccount_returnsNullWhenActiveAccountDeleted() = runTest {
+        val account = repository.create("Test", "5Address", KeyType.SR25519)
+        repository.setActiveAccount(account.id)
+        repository.delete(account.id)
+
+        val activeAccount = repository.getActiveAccount()
+
+        assertNull(activeAccount)
+    }
+
+    @Test
+    fun observeActiveAccountId_emitsUpdatesOnChanges() = runTest {
+        val account1 = repository.create("First", "5Address1", KeyType.SR25519)
+        val account2 = repository.create("Second", "5Address2", KeyType.ED25519)
+
+        repository.observeActiveAccountId().test {
+            // Initial null
+            assertNull(awaitItem())
+
+            // Set first account as active
+            repository.setActiveAccount(account1.id)
+            assertEquals(account1.id, awaitItem())
+
+            // Change to second account
+            repository.setActiveAccount(account2.id)
+            assertEquals(account2.id, awaitItem())
+
+            // Clear active account
+            repository.setActiveAccount(null)
+            assertNull(awaitItem())
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun observeActiveAccount_emitsFullAccountInfo() = runTest {
+        val account = repository.create("Test Account", "5Address", KeyType.SR25519)
+
+        repository.observeActiveAccount().test {
+            // Initial null
+            assertNull(awaitItem())
+
+            // Set active account
+            repository.setActiveAccount(account.id)
+            val activeAccount = awaitItem()
+            assertNotNull(activeAccount)
+            assertEquals("Test Account", activeAccount.label)
+
+            // Update the account label
+            repository.updateLabel(account.id, "Updated Label")
+            val updatedAccount = awaitItem()
+            assertNotNull(updatedAccount)
+            assertEquals("Updated Label", updatedAccount.label)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
 }

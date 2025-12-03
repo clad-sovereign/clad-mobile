@@ -1,0 +1,32 @@
+-- App-wide settings stored as key-value pairs.
+-- Used for storing preferences like active account, theme settings, etc.
+
+CREATE TABLE AppSettings (
+    -- Setting key (unique identifier)
+    key TEXT NOT NULL PRIMARY KEY,
+
+    -- Setting value (stored as text, caller interprets type)
+    value TEXT NOT NULL
+);
+
+-- Get a setting by key
+selectByKey:
+SELECT value
+FROM AppSettings
+WHERE key = ?;
+
+-- Insert or update a setting
+upsert:
+INSERT OR REPLACE INTO AppSettings (key, value)
+VALUES (?, ?);
+
+-- Delete a setting
+deleteByKey:
+DELETE FROM AppSettings
+WHERE key = ?;
+
+-- Check if a setting exists
+exists:
+SELECT COUNT(*)
+FROM AppSettings
+WHERE key = ?;

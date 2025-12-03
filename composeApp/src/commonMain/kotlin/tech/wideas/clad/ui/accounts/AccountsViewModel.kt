@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import tech.wideas.clad.data.AccountInfo
@@ -20,6 +21,7 @@ import tech.wideas.clad.substrate.SubstrateClient
 sealed class AccountsScreenState {
     data object AccountList : AccountsScreenState()
     data object Import : AccountsScreenState()
+    data class AccountDetails(val accountId: String) : AccountsScreenState()
 }
 
 /**
@@ -27,10 +29,16 @@ sealed class AccountsScreenState {
  */
 data class AccountsUiState(
     val accounts: List<AccountInfo> = emptyList(),
+    val activeAccountId: String? = null,
     val isLoading: Boolean = true,
     val screenState: AccountsScreenState = AccountsScreenState.AccountList,
     val error: String? = null
-)
+) {
+    val selectedAccount: AccountInfo?
+        get() = (screenState as? AccountsScreenState.AccountDetails)?.let { state ->
+            accounts.find { it.id == state.accountId }
+        }
+}
 
 class AccountsViewModel(
     private val substrateClient: SubstrateClient,
@@ -61,9 +69,15 @@ class AccountsViewModel(
 
     private fun loadAccounts() {
         viewModelScope.launch {
-            accountRepository.observeAll().collect { accounts ->
+            combine(
+                accountRepository.observeAll(),
+                accountRepository.observeActiveAccountId()
+            ) { accounts, activeId ->
+                Pair(accounts, activeId)
+            }.collect { (accounts, activeId) ->
                 _uiState.value = _uiState.value.copy(
                     accounts = accounts,
+                    activeAccountId = activeId,
                     isLoading = false
                 )
             }
@@ -85,6 +99,10 @@ class AccountsViewModel(
     fun deleteAccount(account: AccountInfo) {
         viewModelScope.launch {
             try {
+                // Clear active account if we're deleting the active one
+                if (_uiState.value.activeAccountId == account.id) {
+                    accountRepository.setActiveAccount(null)
+                }
                 // Delete keypair from secure storage (if exists)
                 keyStorage.deleteKeypair(account.id)
                 // Delete account metadata from database
@@ -103,5 +121,35 @@ class AccountsViewModel(
 
     fun clearMessages() {
         substrateClient.clearMessages()
+    }
+
+    fun navigateToAccountDetails(accountId: String) {
+        _uiState.value = _uiState.value.copy(
+            screenState = AccountsScreenState.AccountDetails(accountId)
+        )
+    }
+
+    fun setActiveAccount(accountId: String) {
+        viewModelScope.launch {
+            try {
+                accountRepository.setActiveAccount(accountId)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Failed to set active account: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun updateAccountLabel(accountId: String, newLabel: String) {
+        viewModelScope.launch {
+            try {
+                accountRepository.updateLabel(accountId, newLabel)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    error = "Failed to update account label: ${e.message}"
+                )
+            }
+        }
     }
 }

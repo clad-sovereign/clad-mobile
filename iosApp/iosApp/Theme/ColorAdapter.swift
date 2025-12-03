@@ -28,7 +28,9 @@ struct ColorAdapterIOS {
         return CladColors.ColorScheme(
             background: Color(argb: kotlinPalette.background),
             surface: Color(argb: kotlinPalette.surface),
+            surfaceVariant: Color(argb: kotlinPalette.surfaceVariant),
             primary: Color(argb: kotlinPalette.primary),
+            primaryContainer: Color(argb: kotlinPalette.primary).opacity(0.3),  // Lighter variant
             onPrimary: Color(argb: kotlinPalette.onPrimary),
             secondary: Color(argb: kotlinPalette.secondary),
             onSecondary: Color(argb: kotlinPalette.onSecondary),
