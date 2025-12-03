@@ -120,6 +120,9 @@ fun ImportScreen(
                         onQrCodeScanned = { content ->
                             viewModel.onQrCodeScanned(content)
                         },
+                        onCameraError = { error ->
+                            viewModel.setCameraError(error)
+                        },
                         onManualEntry = {
                             viewModel.selectMethod(ImportMethod.MANUAL_ADDRESS)
                         }

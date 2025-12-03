@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 fun QrCodeScannerScreen(
     error: String?,
     onQrCodeScanned: (String) -> Unit,
+    onCameraError: (String) -> Unit,
     onManualEntry: () -> Unit
 ) {
     var hasScanned by remember { mutableStateOf(false) }
@@ -53,6 +54,7 @@ fun QrCodeScannerScreen(
                         onQrCodeScanned(content)
                     }
                 },
+                onError = onCameraError,
                 modifier = Modifier.fillMaxSize()
             )
 

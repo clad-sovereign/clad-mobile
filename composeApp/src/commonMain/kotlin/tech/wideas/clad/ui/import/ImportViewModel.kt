@@ -276,6 +276,13 @@ class ImportViewModel(
 
     // region QR Code Import
 
+    /**
+     * Handle camera error from QR scanner.
+     */
+    fun setCameraError(error: String) {
+        _uiState.value = _uiState.value.copy(qrCodeError = error)
+    }
+
     fun onQrCodeScanned(content: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
@@ -341,9 +348,16 @@ class ImportViewModel(
 
     // region Manual Address Import
 
+    companion object {
+        const val MAX_LABEL_LENGTH = 50
+        const val MAX_ADDRESS_LENGTH = 100
+    }
+
     fun updateManualAddress(address: String) {
+        // Sanitize: trim and limit length
+        val sanitized = address.trim().take(MAX_ADDRESS_LENGTH)
         _uiState.value = _uiState.value.copy(
-            manualAddress = address,
+            manualAddress = sanitized,
             addressError = null
         )
     }
@@ -397,7 +411,12 @@ class ImportViewModel(
     // region Confirmation & Saving
 
     fun updateAccountLabel(label: String) {
-        _uiState.value = _uiState.value.copy(accountLabel = label)
+        // Sanitize: trim, limit length, remove control characters
+        val sanitized = label
+            .take(MAX_LABEL_LENGTH)
+            .filter { it.isLetterOrDigit() || it.isWhitespace() || it in "-_." }
+            .trim()
+        _uiState.value = _uiState.value.copy(accountLabel = sanitized)
     }
 
     fun updateKeyType(keyType: KeyType) {
