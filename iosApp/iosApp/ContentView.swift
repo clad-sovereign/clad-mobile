@@ -15,7 +15,7 @@ struct ContentView: View {
     var body: some View {
         // Main app navigation (no biometric auth for Milestone #1)
         if isConnected {
-            AccountsView(viewModel: accountsViewModel)
+            AccountsView(connectionViewModel: accountsViewModel)
         } else {
             ConnectionView(
                 viewModel: connectionViewModel,

@@ -6,5 +6,7 @@
 	<true/>
 	<key>NSFaceIDUsageDescription</key>
 	<string>CLAD Signer uses Face ID to securely authenticate and protect your wallet.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>CLAD Signer uses the camera to scan QR codes containing wallet addresses.</string>
 </dict>
 </plist>

@@ -2,6 +2,9 @@ package tech.wideas.clad.di
 
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
+import tech.wideas.clad.crypto.MnemonicProvider
+import tech.wideas.clad.data.AccountRepository
+import tech.wideas.clad.security.KeyStorage
 import tech.wideas.clad.ui.AccountsViewModelIOS
 import tech.wideas.clad.ui.ConnectionViewModelIOS
 
@@ -24,4 +27,19 @@ class ViewModelHelper : KoinComponent {
             substrateClient = get()
         )
     }
+
+    /**
+     * Get AccountRepository for account metadata persistence
+     */
+    fun getAccountRepository(): AccountRepository = get()
+
+    /**
+     * Get MnemonicProvider for BIP39 operations
+     */
+    fun getMnemonicProvider(): MnemonicProvider = get()
+
+    /**
+     * Get KeyStorage for biometric-protected key storage
+     */
+    fun getKeyStorage(): KeyStorage = get()
 }
