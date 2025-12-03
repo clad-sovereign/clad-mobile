@@ -43,6 +43,9 @@ struct SeedPhraseInputView: View {
                         focusedIndex: $focusedIndex,
                         onWordChange: { index, word in
                             viewModel.updateWord(at: index, with: word)
+                        },
+                        onPhrasePasted: { words in
+                            viewModel.pasteFullPhrase(words)
                         }
                     )
 
@@ -161,6 +164,7 @@ struct WordGrid: View {
     let colors: CladColors.ColorScheme
     var focusedIndex: FocusState<Int?>.Binding
     let onWordChange: (Int, String) -> Void
+    let onPhrasePasted: ([String]) -> Void
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -180,6 +184,7 @@ struct WordGrid: View {
                     onChange: { word in
                         onWordChange(index, word)
                     },
+                    onPhrasePasted: onPhrasePasted,
                     onSubmit: {
                         // Move to next field
                         if index < words.count - 1 {
@@ -202,6 +207,7 @@ struct WordInputField: View {
     let isFocused: Bool
     let onFocus: () -> Void
     let onChange: (String) -> Void
+    let onPhrasePasted: ([String]) -> Void
     let onSubmit: () -> Void
 
     @State private var localWord: String = ""
@@ -231,8 +237,12 @@ struct WordInputField: View {
 
                     if words.count == 1 {
                         onChange(words[0])
-                    } else {
-                        // User pasted multiple words - just use the first one here
+                    } else if words.count == 12 || words.count == 24 {
+                        // User pasted a full recovery phrase - auto-fill all fields
+                        onPhrasePasted(words)
+                        localWord = words[0]
+                    } else if words.count > 1 {
+                        // Partial paste - just use the first word
                         localWord = words[0]
                         onChange(words[0])
                     }

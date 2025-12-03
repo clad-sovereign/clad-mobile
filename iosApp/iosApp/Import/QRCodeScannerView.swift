@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import os.log
 
 /// View for scanning QR codes containing SS58 addresses
 struct QRCodeScannerView: View {
@@ -81,6 +82,12 @@ struct QRCodeScannerView: View {
         .onAppear {
             checkCameraPermission()
         }
+        .onChange(of: viewModel.validationError) { _, newError in
+            if newError != nil {
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.error)
+            }
+        }
     }
 
     private func checkCameraPermission() {
@@ -120,6 +127,7 @@ class QRCameraUIView: UIView {
     private var previewLayer: AVCaptureVideoPreviewLayer?
     private var lastScannedCode: String?
     private var lastScanTime: Date?
+    private let logger = Logger(subsystem: "tech.wideas.clad", category: "QRCodeScanner")
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -167,7 +175,7 @@ class QRCameraUIView: UIView {
                 session.startRunning()
             }
         } catch {
-            print("Failed to setup camera: \(error)")
+            logger.error("Failed to setup camera: \(error.localizedDescription)")
         }
     }
 
@@ -180,7 +188,7 @@ class QRCameraUIView: UIView {
             device.torchMode = on ? .on : .off
             device.unlockForConfiguration()
         } catch {
-            print("Failed to toggle torch: \(error)")
+            logger.error("Failed to toggle torch: \(error.localizedDescription)")
         }
     }
 

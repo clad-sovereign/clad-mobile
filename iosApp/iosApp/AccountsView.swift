@@ -75,6 +75,9 @@ struct AccountsView: View {
         .onAppear {
             connectionViewModel.startPulseAnimation()
         }
+        .onDisappear {
+            accountListViewModel.cleanup()
+        }
         .sheet(isPresented: $showImportSheet) {
             AccountImportFlow()
         }

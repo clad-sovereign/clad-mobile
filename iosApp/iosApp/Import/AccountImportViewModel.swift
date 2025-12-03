@@ -103,6 +103,13 @@ final class AccountImportViewModel {
         self.keyStorage = helper.getKeyStorage()
     }
 
+    /// Test initializer for dependency injection
+    init(accountRepository: AccountRepository, mnemonicProvider: MnemonicProvider, keyStorage: KeyStorage) {
+        self.accountRepository = accountRepository
+        self.mnemonicProvider = mnemonicProvider
+        self.keyStorage = keyStorage
+    }
+
     // MARK: - Navigation Actions
 
     func selectImportMethod(_ method: ImportMethod) {
@@ -158,6 +165,21 @@ final class AccountImportViewModel {
         guard index >= 0 && index < seedWords.count else { return }
         seedWords[index] = word.lowercased().trimmingCharacters(in: .whitespaces)
         validationError = nil
+    }
+
+    /// Handle pasting a full recovery phrase (12 or 24 words)
+    func pasteFullPhrase(_ words: [String]) {
+        let cleanedWords = words.map { $0.lowercased().trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        // Auto-detect word count if it matches 12 or 24
+        if cleanedWords.count == 12 || cleanedWords.count == 24 {
+            setWordCount(cleanedWords.count)
+            for (index, word) in cleanedWords.enumerated() {
+                seedWords[index] = word
+            }
+            validationError = nil
+        }
     }
 
     func validateAndProceedFromSeedPhrase() {
@@ -315,6 +337,7 @@ final class AccountImportViewModel {
                     return
                 }
 
+                clearSensitiveData()
                 flowState = .success
             } else {
                 // Watch-only account - just save metadata
@@ -329,6 +352,12 @@ final class AccountImportViewModel {
         } catch {
             flowState = .error(error.localizedDescription)
         }
+    }
+
+    /// Clear sensitive data from memory after successful import
+    private func clearSensitiveData() {
+        importData.mnemonic = ""
+        seedWords = Array(repeating: "", count: seedWords.count)
     }
 
     private func generateDefaultLabel() -> String {
