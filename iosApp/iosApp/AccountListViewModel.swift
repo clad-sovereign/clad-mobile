@@ -11,13 +11,17 @@ final class AccountListViewModel {
     private let accountRepository: AccountRepository
     private let keyStorage: KeyStorage
     private var observeTask: Task<Void, Never>?
+    private var observeActiveTask: Task<Void, Never>?
 
     // MARK: - Observable State
     var accounts: [AccountInfo] = []
+    var activeAccountId: String?
     var isLoading: Bool = true
     var errorMessage: String?
     var accountToDelete: AccountInfo?
     var showDeleteConfirmation: Bool = false
+    var selectedAccount: AccountInfo?
+    var showAccountDetails: Bool = false
 
     // MARK: - Initialization
     init() {
@@ -30,20 +34,36 @@ final class AccountListViewModel {
 
     func cleanup() {
         observeTask?.cancel()
+        observeActiveTask?.cancel()
     }
 
     // MARK: - Observation
 
     private func startObserving() {
+        // Observe accounts list
         observeTask = Task { [weak self] in
             guard let self = self else { return }
 
-            // Use Kotlin Flow to observe account changes
             for await accountList in self.accountRepository.observeAll() {
                 self.accounts = accountList
                 self.isLoading = false
             }
         }
+
+        // Observe active account ID
+        observeActiveTask = Task { [weak self] in
+            guard let self = self else { return }
+
+            for await activeId in self.accountRepository.observeActiveAccountId() {
+                self.activeAccountId = activeId
+            }
+        }
+    }
+
+    // MARK: - Helper Methods
+
+    func isActive(_ account: AccountInfo) -> Bool {
+        account.id == activeAccountId
     }
 
     // MARK: - Actions
@@ -81,10 +101,41 @@ final class AccountListViewModel {
             // Delete account metadata
             try await accountRepository.delete(id: account.id)
 
+            // Clear active account if we just deleted it
+            if activeAccountId == account.id {
+                try await accountRepository.setActiveAccount(accountId: nil)
+            }
+
             accountToDelete = nil
             showDeleteConfirmation = false
         } catch {
             errorMessage = "Failed to delete account: \(error.localizedDescription)"
         }
+    }
+
+    func setActiveAccount(_ account: AccountInfo) async {
+        do {
+            try await accountRepository.setActiveAccount(accountId: account.id)
+        } catch {
+            errorMessage = "Failed to set active account: \(error.localizedDescription)"
+        }
+    }
+
+    func updateAccountLabel(accountId: String, newLabel: String) async {
+        do {
+            try await accountRepository.updateLabel(id: accountId, label: newLabel)
+        } catch {
+            errorMessage = "Failed to update account label: \(error.localizedDescription)"
+        }
+    }
+
+    func showDetails(for account: AccountInfo) {
+        selectedAccount = account
+        showAccountDetails = true
+    }
+
+    func dismissDetails() {
+        selectedAccount = nil
+        showAccountDetails = false
     }
 }

@@ -6,6 +6,7 @@ import app.cash.sqldelight.coroutines.mapToOneOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import tech.wideas.clad.crypto.KeyType
@@ -13,6 +14,8 @@ import tech.wideas.clad.database.Account
 import tech.wideas.clad.database.CladDatabase
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+
+private const val ACTIVE_ACCOUNT_KEY = "active_account_id"
 
 /**
  * Domain model representing a Substrate/Polkadot account.
@@ -49,6 +52,7 @@ data class AccountInfo(
 class AccountRepository(private val database: CladDatabase) {
 
     private val queries get() = database.accountQueries
+    private val settingsQueries get() = database.appSettingsQueries
 
     /**
      * Observe all accounts as a Flow.
@@ -190,6 +194,72 @@ class AccountRepository(private val database: CladDatabase) {
      */
     suspend fun count(): Long = withContext(Dispatchers.IO) {
         queries.countAll().executeAsOne()
+    }
+
+    // ==================== Active Account Management ====================
+
+    /**
+     * Get the currently active account ID.
+     *
+     * @return Active account ID, or null if none is set
+     */
+    suspend fun getActiveAccountId(): String? = withContext(Dispatchers.IO) {
+        settingsQueries.selectByKey(ACTIVE_ACCOUNT_KEY).executeAsOneOrNull()
+    }
+
+    /**
+     * Observe the currently active account ID as a Flow.
+     *
+     * @return Flow emitting the active account ID (or null)
+     */
+    fun observeActiveAccountId(): Flow<String?> {
+        return settingsQueries.selectByKey(ACTIVE_ACCOUNT_KEY)
+            .asFlow()
+            .mapToOneOrNull(Dispatchers.IO)
+    }
+
+    /**
+     * Set the active account.
+     *
+     * @param accountId The account ID to set as active, or null to clear
+     */
+    suspend fun setActiveAccount(accountId: String?) = withContext(Dispatchers.IO) {
+        if (accountId != null) {
+            settingsQueries.upsert(ACTIVE_ACCOUNT_KEY, accountId)
+        } else {
+            settingsQueries.deleteByKey(ACTIVE_ACCOUNT_KEY)
+        }
+    }
+
+    /**
+     * Observe the currently active account as a Flow.
+     *
+     * Emits the full AccountInfo when active, null otherwise.
+     * Automatically clears the active account if it no longer exists.
+     *
+     * @return Flow emitting the active account (or null)
+     */
+    fun observeActiveAccount(): Flow<AccountInfo?> {
+        return combine(
+            observeActiveAccountId(),
+            observeAll()
+        ) { activeId, accounts ->
+            if (activeId == null) {
+                null
+            } else {
+                accounts.find { it.id == activeId }
+            }
+        }
+    }
+
+    /**
+     * Get the currently active account.
+     *
+     * @return Active account, or null if none is set or it doesn't exist
+     */
+    suspend fun getActiveAccount(): AccountInfo? = withContext(Dispatchers.IO) {
+        val activeId = getActiveAccountId() ?: return@withContext null
+        getById(activeId)
     }
 }
 

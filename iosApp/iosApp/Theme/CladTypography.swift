@@ -20,6 +20,9 @@ struct CladTypography {
     /// Subsection titles - Title 3 (20pt default)
     static let titleMedium = Font.title3.weight(.medium)
 
+    /// Smaller headline - Headline (17pt semibold)
+    static let headlineSmall = Font.headline.weight(.semibold)
+
     // MARK: - Body Text
 
     /// Primary body text - Body (17pt default)

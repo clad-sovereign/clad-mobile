@@ -36,6 +36,15 @@ struct AccountsView: View {
                         AccountListSection(
                             accounts: accountListViewModel.accounts,
                             colors: colors,
+                            activeAccountId: accountListViewModel.activeAccountId,
+                            onAccountClick: { account in
+                                accountListViewModel.showDetails(for: account)
+                            },
+                            onSetActive: { account in
+                                Task {
+                                    await accountListViewModel.setActiveAccount(account)
+                                }
+                            },
                             onDelete: { account in
                                 accountListViewModel.confirmDelete(account: account)
                             }
@@ -80,6 +89,30 @@ struct AccountsView: View {
         }
         .sheet(isPresented: $showImportSheet) {
             AccountImportFlow()
+        }
+        .sheet(isPresented: $accountListViewModel.showAccountDetails) {
+            if let account = accountListViewModel.selectedAccount {
+                AccountDetailsView(
+                    account: account,
+                    isActive: accountListViewModel.isActive(account),
+                    onSetActive: {
+                        Task {
+                            await accountListViewModel.setActiveAccount(account)
+                        }
+                    },
+                    onDelete: {
+                        Task {
+                            accountListViewModel.accountToDelete = account
+                            await accountListViewModel.deleteAccount()
+                        }
+                    },
+                    onUpdateLabel: { newLabel in
+                        Task {
+                            await accountListViewModel.updateAccountLabel(accountId: account.id, newLabel: newLabel)
+                        }
+                    }
+                )
+            }
         }
         .alert("Delete Account", isPresented: $accountListViewModel.showDeleteConfirmation) {
             Button("Cancel", role: .cancel) {
@@ -145,6 +178,9 @@ struct EmptyAccountsView: View {
 struct AccountListSection: View {
     let accounts: [AccountInfo]
     let colors: CladColors.ColorScheme
+    let activeAccountId: String?
+    let onAccountClick: (AccountInfo) -> Void
+    let onSetActive: (AccountInfo) -> Void
     let onDelete: (AccountInfo) -> Void
 
     var body: some View {
@@ -152,7 +188,10 @@ struct AccountListSection: View {
             ForEach(accounts, id: \.id) { account in
                 AccountCard(
                     account: account,
+                    isActive: account.id == activeAccountId,
                     colors: colors,
+                    onClick: { onAccountClick(account) },
+                    onSetActive: { onSetActive(account) },
                     onDelete: { onDelete(account) }
                 )
             }
@@ -163,61 +202,100 @@ struct AccountListSection: View {
 /// Individual account card
 struct AccountCard: View {
     let account: AccountInfo
+    let isActive: Bool
     let colors: CladColors.ColorScheme
+    let onClick: () -> Void
+    let onSetActive: () -> Void
     let onDelete: () -> Void
 
     @State private var showingActions = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                // Account icon
-                Image(systemName: "person.circle.fill")
-                    .font(.title)
-                    .foregroundColor(colors.primary)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(account.label)
-                        .font(CladTypography.titleMedium)
-                        .foregroundColor(colors.onSurface)
-
-                    Text(account.keyType == .sr25519 ? "SR25519" : "ED25519")
-                        .font(CladTypography.caption)
-                        .foregroundColor(colors.onSurfaceVariant)
-                }
-
-                Spacer()
-
-                // More options button
-                Button(action: { showingActions = true }) {
-                    Image(systemName: "ellipsis")
-                        .font(.title3)
-                        .foregroundColor(colors.onSurfaceVariant)
-                        .padding(8)
-                }
-            }
-
-            // Address
-            HStack {
-                Text(formatAddress(account.address))
-                    .font(CladTypography.bodyMedium.monospaced())
-                    .foregroundColor(colors.onSurfaceVariant)
-
-                Spacer()
-
-                Button(action: copyAddress) {
-                    Image(systemName: "doc.on.doc")
-                        .font(.caption)
+        Button(action: onClick) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    // Account icon
+                    Image(systemName: "person.circle.fill")
+                        .font(.title)
                         .foregroundColor(colors.primary)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Text(account.label)
+                                .font(CladTypography.titleMedium)
+                                .foregroundColor(colors.onSurface)
+
+                            if isActive {
+                                Text("Active")
+                                    .font(CladTypography.caption)
+                                    .foregroundColor(colors.onPrimary)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 2)
+                                    .background(colors.primary)
+                                    .cornerRadius(4)
+                            }
+                        }
+
+                        Text(account.keyType == .sr25519 ? "SR25519" : "ED25519")
+                            .font(CladTypography.caption)
+                            .foregroundColor(colors.onSurfaceVariant)
+                    }
+
+                    Spacer()
+
+                    // More options button
+                    Button(action: { showingActions = true }) {
+                        Image(systemName: "ellipsis")
+                            .font(.title3)
+                            .foregroundColor(colors.onSurfaceVariant)
+                            .padding(8)
+                    }
+                }
+
+                // Address
+                HStack {
+                    Text(formatAddress(account.address))
+                        .font(CladTypography.bodyMedium.monospaced())
+                        .foregroundColor(colors.onSurfaceVariant)
+
+                    Spacer()
+
+                    if !isActive {
+                        Button("Set Active") {
+                            onSetActive()
+                        }
+                        .font(CladTypography.caption)
+                        .foregroundColor(colors.primary)
+                    }
+
+                    Button(action: copyAddress) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.caption)
+                            .foregroundColor(colors.primary)
+                    }
                 }
             }
+            .padding(16)
+            .background(
+                isActive
+                    ? colors.primaryContainer.opacity(0.3)
+                    : colors.surface
+            )
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isActive ? colors.primary : Color.clear, lineWidth: 2)
+            )
         }
-        .padding(16)
-        .background(colors.surface)
-        .cornerRadius(12)
+        .buttonStyle(.plain)
         .confirmationDialog("Account Actions", isPresented: $showingActions) {
             Button("Copy Address") {
                 copyAddress()
+            }
+            if !isActive {
+                Button("Set as Active") {
+                    onSetActive()
+                }
             }
             Button("Delete Account", role: .destructive) {
                 onDelete()

@@ -34,16 +34,19 @@ fun AccountsScreen(
     val connectionState by viewModel.connectionState.collectAsState()
     val messages by viewModel.messages.collectAsState()
 
-    // Handle navigation between account list and import
-    when (uiState.screenState) {
+    // Handle navigation between account list, import, and details
+    when (val screenState = uiState.screenState) {
         is AccountsScreenState.AccountList -> {
             AccountListContent(
                 accounts = uiState.accounts,
+                activeAccountId = uiState.activeAccountId,
                 connectionState = connectionState,
                 messages = messages,
                 isLoading = uiState.isLoading,
                 error = uiState.error,
                 onImportClick = { viewModel.navigateToImport() },
+                onAccountClick = { account -> viewModel.navigateToAccountDetails(account.id) },
+                onSetActiveAccount = { account -> viewModel.setActiveAccount(account.id) },
                 onDeleteAccount = { account -> viewModel.deleteAccount(account) },
                 onClearError = { viewModel.clearError() }
             )
@@ -54,6 +57,27 @@ fun AccountsScreen(
                 onImportComplete = { viewModel.navigateToAccountList() }
             )
         }
+        is AccountsScreenState.AccountDetails -> {
+            val selectedAccount = uiState.selectedAccount
+            if (selectedAccount != null) {
+                AccountDetailsScreen(
+                    account = selectedAccount,
+                    isActive = selectedAccount.id == uiState.activeAccountId,
+                    onBack = { viewModel.navigateToAccountList() },
+                    onSetActive = { viewModel.setActiveAccount(selectedAccount.id) },
+                    onDelete = {
+                        viewModel.deleteAccount(selectedAccount)
+                        viewModel.navigateToAccountList()
+                    },
+                    onUpdateLabel = { newLabel ->
+                        viewModel.updateAccountLabel(selectedAccount.id, newLabel)
+                    }
+                )
+            } else {
+                // Account not found, go back to list
+                viewModel.navigateToAccountList()
+            }
+        }
     }
 }
 
@@ -61,11 +85,14 @@ fun AccountsScreen(
 @Composable
 private fun AccountListContent(
     accounts: List<AccountInfo>,
+    activeAccountId: String?,
     connectionState: ConnectionState,
     messages: List<SubstrateClient.NodeMessage>,
     isLoading: Boolean,
     error: String?,
     onImportClick: () -> Unit,
+    onAccountClick: (AccountInfo) -> Unit,
+    onSetActiveAccount: (AccountInfo) -> Unit,
     onDeleteAccount: (AccountInfo) -> Unit,
     onClearError: () -> Unit
 ) {
@@ -167,6 +194,9 @@ private fun AccountListContent(
                         ) { account ->
                             AccountCard(
                                 account = account,
+                                isActive = account.id == activeAccountId,
+                                onClick = { onAccountClick(account) },
+                                onSetActive = { onSetActiveAccount(account) },
                                 onDelete = { onDeleteAccount(account) }
                             )
                         }
@@ -270,15 +300,28 @@ private fun EmptyAccountsState(onImportClick: () -> Unit) {
 @Composable
 private fun AccountCard(
     account: AccountInfo,
+    isActive: Boolean,
+    onClick: () -> Unit,
+    onSetActive: () -> Unit,
     onDelete: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
     Card(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+            containerColor = if (isActive)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+            else
+                MaterialTheme.colorScheme.surface
+        ),
+        border = if (isActive) {
+            androidx.compose.foundation.BorderStroke(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+        } else null
     ) {
         Row(
             modifier = Modifier
@@ -288,11 +331,29 @@ private fun AccountCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = account.label,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = account.label,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (isActive) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = "Active",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -319,12 +380,19 @@ private fun AccountCard(
                 )
             }
 
-            IconButton(onClick = { showDeleteDialog = true }) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete account",
-                    tint = MaterialTheme.colorScheme.error
-                )
+            Row {
+                if (!isActive) {
+                    TextButton(onClick = onSetActive) {
+                        Text("Set Active")
+                    }
+                }
+                IconButton(onClick = { showDeleteDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete account",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }
