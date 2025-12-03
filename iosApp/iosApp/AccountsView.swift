@@ -2,7 +2,9 @@ import SwiftUI
 import Shared
 
 struct AccountsView: View {
-    @ObservedObject var viewModel: AccountsViewModelWrapper
+    @ObservedObject var connectionViewModel: AccountsViewModelWrapper
+    @State private var accountListViewModel = AccountListViewModel()
+    @State private var showImportSheet = false
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -21,99 +23,309 @@ struct AccountsView: View {
                         .foregroundColor(colors.onBackground)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Text("Account management coming in Phase 1B")
-                        .font(CladTypography.bodyLarge)
-                        .foregroundColor(colors.onSurfaceVariant)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Account List Section
+                    if accountListViewModel.isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 40)
+                    } else if accountListViewModel.accounts.isEmpty {
+                        EmptyAccountsView(colors: colors) {
+                            showImportSheet = true
+                        }
+                    } else {
+                        AccountListSection(
+                            accounts: accountListViewModel.accounts,
+                            colors: colors,
+                            onDelete: { account in
+                                accountListViewModel.confirmDelete(account: account)
+                            }
+                        )
+                    }
 
                     // Connection Status Card
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text(viewModel.connectionStatusText)
-                                .font(CladTypography.titleMedium)
-                                .foregroundColor(colors.onSurface)
+                    ConnectionStatusCard(
+                        viewModel: connectionViewModel,
+                        colors: colors
+                    )
+                }
+                .padding(24)
+                .padding(.bottom, 80) // Space for FAB
+            }
 
-                            Spacer()
+            // Floating Action Button
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button(action: { showImportSheet = true }) {
+                        Image(systemName: "plus")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(colors.onPrimary)
+                            .frame(width: 56, height: 56)
+                            .background(colors.primary)
+                            .clipShape(Circle())
+                            .shadow(color: colors.primary.opacity(0.3), radius: 8, x: 0, y: 4)
+                    }
+                    .padding(.trailing, 24)
+                    .padding(.bottom, 24)
+                }
+            }
+        }
+        .onAppear {
+            connectionViewModel.startPulseAnimation()
+        }
+        .onDisappear {
+            accountListViewModel.cleanup()
+        }
+        .sheet(isPresented: $showImportSheet) {
+            AccountImportFlow()
+        }
+        .alert("Delete Account", isPresented: $accountListViewModel.showDeleteConfirmation) {
+            Button("Cancel", role: .cancel) {
+                accountListViewModel.cancelDelete()
+            }
+            Button("Delete", role: .destructive) {
+                Task {
+                    await accountListViewModel.deleteAccount()
+                }
+            }
+        } message: {
+            if let account = accountListViewModel.accountToDelete {
+                Text("Are you sure you want to delete \"\(account.label)\"? This action cannot be undone.")
+            }
+        }
+    }
+}
 
-                            // Status indicator with pulse animation
-                            Circle()
-                                .fill(viewModel.connectionStatusColor)
-                                .frame(
-                                    width: viewModel.isConnected ? viewModel.pulseSize : 12,
-                                    height: viewModel.isConnected ? viewModel.pulseSize : 12
-                                )
-                        }
+/// Empty state view when no accounts exist
+struct EmptyAccountsView: View {
+    let colors: CladColors.ColorScheme
+    let onImport: () -> Void
 
-                        if viewModel.isConnected {
-                            VStack(alignment: .leading, spacing: 8) {
-                                HStack(spacing: 4) {
-                                    Text("✓ Substrate RPC connection established")
-                                        .font(CladTypography.bodyMedium)
-                                        .foregroundColor(colors.onSurfaceVariant)
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "wallet.pass")
+                .font(.system(size: 48))
+                .foregroundColor(colors.onSurfaceVariant.opacity(0.5))
+
+            VStack(spacing: 8) {
+                Text("No Accounts Yet")
+                    .font(CladTypography.titleMedium)
+                    .foregroundColor(colors.onSurface)
+
+                Text("Import an account using a recovery phrase, QR code, or address")
+                    .font(CladTypography.bodyMedium)
+                    .foregroundColor(colors.onSurfaceVariant)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button(action: onImport) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Import Account")
+                }
+                .font(CladTypography.bodyLarge)
+                .fontWeight(.semibold)
+                .foregroundColor(colors.onPrimary)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 14)
+                .background(colors.primary)
+                .cornerRadius(12)
+            }
+        }
+        .padding(.vertical, 40)
+        .frame(maxWidth: .infinity)
+        .background(colors.surface)
+        .cornerRadius(12)
+    }
+}
+
+/// List of account cards
+struct AccountListSection: View {
+    let accounts: [AccountInfo]
+    let colors: CladColors.ColorScheme
+    let onDelete: (AccountInfo) -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ForEach(accounts, id: \.id) { account in
+                AccountCard(
+                    account: account,
+                    colors: colors,
+                    onDelete: { onDelete(account) }
+                )
+            }
+        }
+    }
+}
+
+/// Individual account card
+struct AccountCard: View {
+    let account: AccountInfo
+    let colors: CladColors.ColorScheme
+    let onDelete: () -> Void
+
+    @State private var showingActions = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                // Account icon
+                Image(systemName: "person.circle.fill")
+                    .font(.title)
+                    .foregroundColor(colors.primary)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(account.label)
+                        .font(CladTypography.titleMedium)
+                        .foregroundColor(colors.onSurface)
+
+                    Text(account.keyType == .sr25519 ? "SR25519" : "ED25519")
+                        .font(CladTypography.caption)
+                        .foregroundColor(colors.onSurfaceVariant)
+                }
+
+                Spacer()
+
+                // More options button
+                Button(action: { showingActions = true }) {
+                    Image(systemName: "ellipsis")
+                        .font(.title3)
+                        .foregroundColor(colors.onSurfaceVariant)
+                        .padding(8)
+                }
+            }
+
+            // Address
+            HStack {
+                Text(formatAddress(account.address))
+                    .font(CladTypography.bodyMedium.monospaced())
+                    .foregroundColor(colors.onSurfaceVariant)
+
+                Spacer()
+
+                Button(action: copyAddress) {
+                    Image(systemName: "doc.on.doc")
+                        .font(.caption)
+                        .foregroundColor(colors.primary)
+                }
+            }
+        }
+        .padding(16)
+        .background(colors.surface)
+        .cornerRadius(12)
+        .confirmationDialog("Account Actions", isPresented: $showingActions) {
+            Button("Copy Address") {
+                copyAddress()
+            }
+            Button("Delete Account", role: .destructive) {
+                onDelete()
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private func formatAddress(_ address: String) -> String {
+        guard address.count > 16 else { return address }
+        let prefix = String(address.prefix(8))
+        let suffix = String(address.suffix(8))
+        return "\(prefix)...\(suffix)"
+    }
+
+    private func copyAddress() {
+        UIPasteboard.general.string = account.address
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(.success)
+    }
+}
+
+/// Connection status card (extracted from original view)
+struct ConnectionStatusCard: View {
+    @ObservedObject var viewModel: AccountsViewModelWrapper
+    let colors: CladColors.ColorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(viewModel.connectionStatusText)
+                    .font(CladTypography.titleMedium)
+                    .foregroundColor(colors.onSurface)
+
+                Spacer()
+
+                // Status indicator with pulse animation
+                Circle()
+                    .fill(viewModel.connectionStatusColor)
+                    .frame(
+                        width: viewModel.isConnected ? viewModel.pulseSize : 12,
+                        height: viewModel.isConnected ? viewModel.pulseSize : 12
+                    )
+            }
+
+            if viewModel.isConnected {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 4) {
+                        Text("Substrate RPC connection established")
+                            .font(CladTypography.bodyMedium)
+                            .foregroundColor(colors.onSurfaceVariant)
+                    }
+
+                    HStack(spacing: 4) {
+                        Text("Metadata fetched successfully")
+                            .font(CladTypography.bodyMedium)
+                            .foregroundColor(colors.onSurfaceVariant)
+                    }
+                }
+
+                Divider()
+                    .background(colors.tertiary.opacity(0.3))
+                    .padding(.vertical, 8)
+
+                // Node Stream Section
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Node Stream")
+                        .font(CladTypography.labelLarge)
+                        .foregroundColor(colors.onSurfaceVariant)
+
+                    // Messages container with scroll and auto-scroll
+                    ScrollViewReader { proxy in
+                        let messages = viewModel.recentMessages(colorScheme: colors)
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(messages, id: \.id) { message in
+                                    NodeMessageRow(message: message)
+                                        .id(message.id)
                                 }
 
-                                HStack(spacing: 4) {
-                                    Text("✓ Metadata fetched successfully")
-                                        .font(CladTypography.bodyMedium)
-                                        .foregroundColor(colors.onSurfaceVariant)
+                                if messages.isEmpty {
+                                    Text("Waiting for messages...")
+                                        .font(CladTypography.caption)
+                                        .foregroundColor(colors.tertiary)
+                                        .padding(.vertical, 8)
                                 }
                             }
-
-                            Divider()
-                                .background(colors.tertiary.opacity(0.3))
-                                .padding(.vertical, 8)
-
-                            // Node Stream Section
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Node Stream")
-                                    .font(CladTypography.labelLarge)
-                                    .foregroundColor(colors.onSurfaceVariant)
-
-                                // Messages container with scroll and auto-scroll
-                                ScrollViewReader { proxy in
-                                    let messages = viewModel.recentMessages(colorScheme: colors)
-                                    ScrollView {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            ForEach(messages, id: \.id) { message in
-                                                NodeMessageRow(message: message)
-                                                    .id(message.id)
-                                            }
-
-                                            if messages.isEmpty {
-                                                Text("Waiting for messages...")
-                                                    .font(CladTypography.caption)
-                                                    .foregroundColor(colors.tertiary)
-                                                    .padding(.vertical, 8)
-                                            }
-                                        }
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    }
-                                    .padding(12)
-                                    .background(colors.background)
-                                    .cornerRadius(8)
-                                    .frame(height: 125)
-                                    .onChange(of: viewModel.messages.count) {
-                                        // Auto-scroll to bottom when new messages arrive
-                                        if let lastMessage = messages.last {
-                                            withAnimation {
-                                                proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                                            }
-                                        }
-                                    }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(12)
+                        .background(colors.background)
+                        .cornerRadius(8)
+                        .frame(height: 125)
+                        .onChange(of: viewModel.messages.count) {
+                            // Auto-scroll to bottom when new messages arrive
+                            if let lastMessage = messages.last {
+                                withAnimation {
+                                    proxy.scrollTo(lastMessage.id, anchor: .bottom)
                                 }
                             }
                         }
                     }
-                    .padding(16)
-                    .background(colors.surface)
-                    .cornerRadius(12)
                 }
-                .padding(24)
             }
         }
-        .onAppear {
-            viewModel.startPulseAnimation()
-        }
+        .padding(16)
+        .background(colors.surface)
+        .cornerRadius(12)
     }
 }
 
