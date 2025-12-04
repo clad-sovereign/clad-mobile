@@ -12,16 +12,33 @@ import kotlin.test.assertTrue
  * These tests verify that derivation path parsing and chaincode computation
  * match Substrate's algorithm exactly.
  *
- * ## Test Vectors
+ * ## Chaincode Computation (matching Substrate)
  *
- * Chaincodes are computed as follows (matching Substrate):
- * - String "Alice" → UTF-8 [65, 108, 105, 99, 101] → zero-pad to 32 bytes
- * - Numeric "42" → little-endian u64 [42, 0, 0, 0, 0, 0, 0, 0] → zero-pad to 32 bytes
- * - Hex "0xabcd" → decoded [0xab, 0xcd] → zero-pad to 32 bytes
+ * Substrate's DeriveJunction SCALE-encodes values before using them as chaincodes:
+ * - String "Alice" → SCALE: [0x14] (compact length 5*4) + UTF-8 [65, 108, 105, 99, 101] → zero-pad to 32 bytes
+ *   Result: [0x14, 0x41, 0x6c, 0x69, 0x63, 0x65, 0x00, ...]
+ * - Numeric "42" → little-endian u64 [42, 0, 0, 0, 0, 0, 0, 0] → zero-pad to 32 bytes (NOT SCALE-encoded)
+ * - Hex "0xabcd" → decoded [0xab, 0xcd] → zero-pad to 32 bytes (raw bytes, NOT SCALE-encoded)
+ *
+ * @see <a href="https://github.com/paritytech/polkadot-sdk/blob/master/substrate/primitives/core/src/crypto.rs">Substrate DeriveJunction</a>
  */
 class JunctionDecoderTest {
 
     private val decoder = JunctionDecoder()
+
+    /**
+     * Helper to create expected SCALE-encoded string chaincode.
+     * SCALE compact encoding: length * 4 for lengths < 64 (single byte mode).
+     *
+     * Note: Intentionally mirrors JunctionDecoder.scaleEncodeString() for verification.
+     */
+    private fun scaleEncodedChaincode(str: String): ByteArray {
+        val utf8 = str.encodeToByteArray()
+        val compactLength = (utf8.size shl 2).toByte() // length * 4
+        val encoded = byteArrayOf(compactLength) + utf8
+        // Zero-pad to 32 bytes
+        return encoded + ByteArray(32 - encoded.size)
+    }
 
     // ============================================================================
     // Empty Path Tests
@@ -44,11 +61,11 @@ class JunctionDecoderTest {
         assertEquals(1, junctions.size)
         assertEquals(JunctionType.HARD, junctions[0].type)
 
-        // "Alice" → UTF-8 bytes + zero padding
-        val expected = "Alice".encodeToByteArray() + ByteArray(27)
+        // "Alice" → SCALE-encoded (compact length + UTF-8) + zero padding
+        val expected = scaleEncodedChaincode("Alice")
         assertTrue(
             expected.contentEquals(junctions[0].chaincode),
-            "Chaincode should be 'Alice' UTF-8 bytes zero-padded to 32"
+            "Chaincode should be SCALE-encoded 'Alice' zero-padded to 32"
         )
     }
 
@@ -59,7 +76,7 @@ class JunctionDecoderTest {
         assertEquals(1, junctions.size)
         assertEquals(JunctionType.SOFT, junctions[0].type)
 
-        val expected = "soft".encodeToByteArray() + ByteArray(28)
+        val expected = scaleEncodedChaincode("soft")
         assertTrue(expected.contentEquals(junctions[0].chaincode))
     }
 
@@ -129,8 +146,8 @@ class JunctionDecoderTest {
         assertEquals(JunctionType.HARD, junctions[0].type)
         assertEquals(JunctionType.HARD, junctions[1].type)
 
-        val aliceExpected = "Alice".encodeToByteArray() + ByteArray(27)
-        val bobExpected = "Bob".encodeToByteArray() + ByteArray(29)
+        val aliceExpected = scaleEncodedChaincode("Alice")
+        val bobExpected = scaleEncodedChaincode("Bob")
 
         assertTrue(aliceExpected.contentEquals(junctions[0].chaincode))
         assertTrue(bobExpected.contentEquals(junctions[1].chaincode))
@@ -144,8 +161,8 @@ class JunctionDecoderTest {
         assertEquals(JunctionType.HARD, junctions[0].type)
         assertEquals(JunctionType.SOFT, junctions[1].type)
 
-        val hardExpected = "hard".encodeToByteArray() + ByteArray(28)
-        val softExpected = "soft".encodeToByteArray() + ByteArray(28)
+        val hardExpected = scaleEncodedChaincode("hard")
+        val softExpected = scaleEncodedChaincode("soft")
 
         assertTrue(hardExpected.contentEquals(junctions[0].chaincode))
         assertTrue(softExpected.contentEquals(junctions[1].chaincode))
@@ -160,9 +177,9 @@ class JunctionDecoderTest {
         assertEquals(JunctionType.SOFT, junctions[1].type)   // /stash
         assertEquals(JunctionType.HARD, junctions[2].type)   // //controller
 
-        val aliceExpected = "Alice".encodeToByteArray() + ByteArray(27)
-        val stashExpected = "stash".encodeToByteArray() + ByteArray(27)
-        val controllerExpected = "controller".encodeToByteArray() + ByteArray(22)
+        val aliceExpected = scaleEncodedChaincode("Alice")
+        val stashExpected = scaleEncodedChaincode("stash")
+        val controllerExpected = scaleEncodedChaincode("controller")
 
         assertTrue(aliceExpected.contentEquals(junctions[0].chaincode))
         assertTrue(stashExpected.contentEquals(junctions[1].chaincode))
@@ -175,15 +192,15 @@ class JunctionDecoderTest {
 
         assertEquals(3, junctions.size)
 
-        // //0 → numeric 0 as little-endian u64
+        // //0 → numeric 0 as little-endian u64 (NOT SCALE-encoded)
         val zeroExpected = byteArrayOf(0, 0, 0, 0, 0, 0, 0, 0) + ByteArray(24)
         assertTrue(zeroExpected.contentEquals(junctions[0].chaincode))
 
-        // /Alice → string
-        val aliceExpected = "Alice".encodeToByteArray() + ByteArray(27)
+        // /Alice → SCALE-encoded string
+        val aliceExpected = scaleEncodedChaincode("Alice")
         assertTrue(aliceExpected.contentEquals(junctions[1].chaincode))
 
-        // /1 → numeric 1 as little-endian u64
+        // /1 → numeric 1 as little-endian u64 (NOT SCALE-encoded)
         val oneExpected = byteArrayOf(1, 0, 0, 0, 0, 0, 0, 0) + ByteArray(24)
         assertTrue(oneExpected.contentEquals(junctions[2].chaincode))
     }
@@ -196,18 +213,20 @@ class JunctionDecoderTest {
     fun `Alice chaincode matches expected value`() {
         val junctions = decoder.decode("//Alice")
 
-        // "Alice" = [65, 108, 105, 99, 101] in UTF-8
-        val aliceUtf8 = byteArrayOf(65, 108, 105, 99, 101)
-        val expectedChaincode = aliceUtf8 + ByteArray(27)
+        // "Alice" SCALE-encoded:
+        // - Compact length: 5 * 4 = 20 = 0x14
+        // - UTF-8 bytes: [65, 108, 105, 99, 101] = [0x41, 0x6c, 0x69, 0x63, 0x65]
+        // - Total: [0x14, 0x41, 0x6c, 0x69, 0x63, 0x65] + 26 zeros
+        val expectedChaincode = scaleEncodedChaincode("Alice")
 
         assertEquals(32, junctions[0].chaincode.size)
         assertTrue(
             expectedChaincode.contentEquals(junctions[0].chaincode),
-            "Alice chaincode should be UTF-8 bytes [65, 108, 105, 99, 101] + 27 zeros"
+            "Alice chaincode should be SCALE-encoded [0x14, 0x41, 0x6c, 0x69, 0x63, 0x65] + 26 zeros"
         )
 
-        // Verify hex representation
-        val expectedHex = "416c696365" + "00".repeat(27)
+        // Verify hex representation (SCALE-encoded)
+        val expectedHex = "14416c696365" + "00".repeat(26)
         assertEquals(expectedHex, junctions[0].chaincode.toHexString())
     }
 
@@ -216,24 +235,30 @@ class JunctionDecoderTest {
     // ============================================================================
 
     @Test
-    fun `junction name at exactly 32 bytes`() {
-        val name32 = "a".repeat(32)
-        val junctions = decoder.decode("//$name32")
+    fun `junction name at exactly 31 bytes fits with SCALE length prefix`() {
+        // 31-byte string + 1-byte SCALE prefix = 32 bytes, exactly fitting chaincode
+        val name31 = "a".repeat(31)
+        val junctions = decoder.decode("//$name31")
 
         assertEquals(1, junctions.size)
         assertEquals(32, junctions[0].chaincode.size)
-        assertTrue(name32.encodeToByteArray().contentEquals(junctions[0].chaincode))
+
+        // SCALE encode: length prefix (31 * 4 = 124 = 0x7c) + 31 'a' bytes
+        val expected = scaleEncodedChaincode(name31)
+        assertTrue(expected.contentEquals(junctions[0].chaincode))
     }
 
     @Test
-    fun `junction name over 32 bytes throws`() {
-        val name33 = "a".repeat(33)
+    fun `junction name over 31 bytes throws`() {
+        // 32-byte string + 1-byte SCALE prefix = 33 bytes, exceeds chaincode limit
+        val name32 = "a".repeat(32)
 
         val exception = assertFailsWith<IllegalArgumentException> {
-            decoder.decode("//$name33")
+            decoder.decode("//$name32")
         }
 
-        assertTrue(exception.message?.contains("≤ 32 bytes") == true)
+        assertTrue(exception.message?.contains("≤ 32 bytes") == true ||
+                   exception.message?.contains("≤ ${Junction.CHAINCODE_LENGTH} bytes") == true)
     }
 
     @Test
@@ -241,7 +266,7 @@ class JunctionDecoderTest {
         val junctions = decoder.decode("//test-account_1")
 
         assertEquals(1, junctions.size)
-        val expected = "test-account_1".encodeToByteArray() + ByteArray(18)
+        val expected = scaleEncodedChaincode("test-account_1")
         assertTrue(expected.contentEquals(junctions[0].chaincode))
     }
 
@@ -253,7 +278,7 @@ class JunctionDecoderTest {
         assertEquals(1, junctions.size)
         val cafeBytes = "café".encodeToByteArray() // 5 bytes in UTF-8 (é is 2 bytes)
         assertEquals(5, cafeBytes.size) // c=1, a=1, f=1, é=2
-        val expected = cafeBytes + ByteArray(27)
+        val expected = scaleEncodedChaincode("café")
         assertTrue(expected.contentEquals(junctions[0].chaincode))
     }
 

@@ -336,10 +336,9 @@ final class MnemonicProviderTests: XCTestCase {
     ///
     /// If this test fails, derived keys on iOS will NOT match Android/web wallets!
     ///
-    /// TODO: Re-enable once iOS SR25519 derivation matches Substrate algorithm.
+    /// Validates JunctionDecoder SCALE encoding produces correct derivation.
     /// Tracked in: https://github.com/clad-sovereign/clad-mobile/issues/63
     func testAliceDerivationProducesExpectedSr25519PublicKey() throws {
-        throw XCTSkip("iOS SR25519 derivation does not match Substrate algorithm yet. See issue #63.")
 
         // Values from CrossPlatformDeterminismTest.AliceTestVector
         let devMnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"
@@ -379,10 +378,9 @@ final class MnemonicProviderTests: XCTestCase {
     /// NOTE: Values duplicated from CrossPlatformDeterminismTest.AliceTestVector (shared/commonTest).
     /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt (Android equivalent)
     ///
-    /// TODO: Re-enable once iOS SR25519 derivation matches Substrate algorithm.
+    /// Validates JunctionDecoder SCALE encoding produces correct SS58 address.
     /// Tracked in: https://github.com/clad-sovereign/clad-mobile/issues/63
     func testAliceDerivationProducesExpectedSs58Address() throws {
-        throw XCTSkip("iOS SR25519 derivation does not match Substrate algorithm yet. See issue #63.")
 
         // Values from CrossPlatformDeterminismTest.AliceTestVector
         let devMnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"
