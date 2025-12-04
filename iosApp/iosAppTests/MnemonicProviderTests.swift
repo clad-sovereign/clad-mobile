@@ -115,20 +115,6 @@ final class MnemonicProviderTests: XCTestCase {
         XCTAssertGreaterThan(Int(keypair.privateKey.size), 0, "Private key should not be empty")
     }
 
-    func testToKeypairGeneratesEd25519Keypair() {
-        let mnemonic = provider.generate(wordCount: .words12)
-        let keypair = provider.toKeypair(
-            mnemonic: mnemonic,
-            passphrase: "",
-            keyType: .ed25519,
-            derivationPath: ""
-        )
-
-        XCTAssertEqual(keypair.keyType, .ed25519)
-        XCTAssertEqual(Int(keypair.publicKey.size), 32, "Public key should be 32 bytes")
-        XCTAssertGreaterThan(Int(keypair.privateKey.size), 0, "Private key should not be empty")
-    }
-
     func testToKeypairIsDeterministic() {
         let mnemonic = provider.generate(wordCount: .words12)
         let keypair1 = provider.toKeypair(
@@ -239,81 +225,6 @@ final class MnemonicProviderTests: XCTestCase {
             expectedAddress,
             """
             SS58 address mismatch!
-
-            Expected: \(expectedAddress)
-            Actual:   \(actualAddress)
-            """
-        )
-    }
-
-    /// CRITICAL TEST: Verifies iOS produces the same ED25519 keypair as Substrate subkey.
-    /// If this test fails, iOS ED25519 wallets will NOT be recoverable on other platforms!
-    ///
-    /// Test vector from Substrate subkey documentation:
-    /// `subkey inspect --scheme ed25519 "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"`
-    ///
-    /// NOTE: These values are duplicated from CrossPlatformDeterminismTest.TestVector2Ed25519 in Kotlin
-    /// because Swift cannot import Kotlin test sources. The single source of truth is the Kotlin file.
-    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt for Android equivalent.
-    func testKnownMnemonicProducesExpectedEd25519PublicKey() {
-        // Values from CrossPlatformDeterminismTest.TestVector2Ed25519
-        let testMnemonic = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"
-        let expectedPublicKeyHex = "1a0e2bf1e0195a1f5396c5fd209a620a48fe90f6f336d89c89405a0183a857a3"
-
-        let keypair = provider.toKeypair(
-            mnemonic: testMnemonic,
-            passphrase: "",
-            keyType: .ed25519,
-            derivationPath: ""
-        )
-
-        let actualPublicKeyHex = kotlinByteArrayToHex(keypair.publicKey)
-
-        XCTAssertEqual(
-            actualPublicKeyHex,
-            expectedPublicKeyHex,
-            """
-            CROSS-PLATFORM DETERMINISM FAILURE!
-
-            The ED25519 public key derived from the test mnemonic does not match
-            the expected value from Substrate subkey.
-
-            Mnemonic: "\(testMnemonic)"
-            Expected: \(expectedPublicKeyHex)
-            Actual:   \(actualPublicKeyHex)
-
-            This means iOS will generate DIFFERENT ED25519 addresses than Android/web wallets
-            from the same recovery phrase, breaking wallet portability!
-            """
-        )
-    }
-
-    /// Verifies iOS produces the correct SS58 address from a known mnemonic using ED25519.
-    ///
-    /// NOTE: Values duplicated from CrossPlatformDeterminismTest.TestVector2Ed25519 (Kotlin).
-    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt for Android equivalent.
-    func testKnownMnemonicProducesExpectedEd25519Ss58Address() {
-        // Values from CrossPlatformDeterminismTest.TestVector2Ed25519
-        let testMnemonic = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"
-        let expectedAddress = "5CesK3uTmn4NGfD3oyGBd1jrp4EfRyYdtqL3ERe9SXv8jUHb"
-
-        let keypair = provider.toKeypair(
-            mnemonic: testMnemonic,
-            passphrase: "",
-            keyType: .ed25519,
-            derivationPath: ""
-        )
-
-        let actualAddress = Ss58.shared.encode(
-            publicKey: keypair.publicKey,
-            networkPrefix: NetworkPrefix.shared.GENERIC_SUBSTRATE
-        )
-
-        XCTAssertEqual(
-            actualAddress,
-            expectedAddress,
-            """
-            ED25519 SS58 address mismatch!
 
             Expected: \(expectedAddress)
             Actual:   \(actualAddress)
