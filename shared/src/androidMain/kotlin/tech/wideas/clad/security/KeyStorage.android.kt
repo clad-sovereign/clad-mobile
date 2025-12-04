@@ -243,16 +243,6 @@ class AndroidKeyStorage(
                 .setUserAuthenticationRequired(true)
                 .setInvalidatedByBiometricEnrollment(true)
 
-            // Use StrongBox if available (Android P+)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                try {
-                    specBuilder.setIsStrongBoxBacked(true)
-                    Log.d(TAG, "StrongBox enabled for key: $keyAlias")
-                } catch (e: Exception) {
-                    Log.d(TAG, "StrongBox not available, using TEE: ${e.message}")
-                }
-            }
-
             // Set authentication parameters (Android R+)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 specBuilder.setUserAuthenticationParameters(
@@ -261,6 +251,24 @@ class AndroidKeyStorage(
                 )
             }
 
+            // Try StrongBox first (Android P+), fall back to TEE if unavailable
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                try {
+                    specBuilder.setIsStrongBoxBacked(true)
+                    keyGenerator.init(specBuilder.build())
+                    val key = keyGenerator.generateKey()
+                    Log.d(TAG, "Key generated with StrongBox: $keyAlias")
+                    return@withContext key
+                } catch (e: android.security.keystore.StrongBoxUnavailableException) {
+                    Log.d(TAG, "StrongBox unavailable, falling back to TEE: ${e.message}")
+                    specBuilder.setIsStrongBoxBacked(false)
+                } catch (e: Exception) {
+                    Log.d(TAG, "StrongBox key generation failed, falling back to TEE: ${e.message}")
+                    specBuilder.setIsStrongBoxBacked(false)
+                }
+            }
+
+            // Generate key without StrongBox (TEE-backed)
             keyGenerator.init(specBuilder.build())
             keyGenerator.generateKey()
         }
