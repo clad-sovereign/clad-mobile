@@ -9,7 +9,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import tech.wideas.clad.crypto.KeyType
 import tech.wideas.clad.database.CladDatabase
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -47,11 +46,11 @@ class DatabaseMigrationTest {
     /**
      * Tests migration from schema version 1 to version 2.
      *
-     * Version 1 had only the Account table.
-     * Version 2 adds the AppSettings table.
+     * Version 1 had the Account table with keyType column and no AppSettings table.
+     * Version 2 removes the keyType column (SR25519-only) and adds AppSettings table.
      */
     @Test
-    fun migration_v1_to_v2_createsAppSettingsTable() = runTest {
+    fun migration_v1_to_v2_removesKeyTypeAndCreatesAppSettings() = runTest {
         // Step 1: Create a version 1 database manually
         createVersion1Database()
 
@@ -67,19 +66,17 @@ class DatabaseMigrationTest {
         val database = CladDatabase(driver)
         val repository = AccountRepository(database)
 
-        // Step 4: Verify existing accounts survived migration
+        // Step 4: Verify existing accounts survived migration (keyType column removed)
         val accounts = repository.getAll()
         assertEquals(2, accounts.size)
 
         val alice = accounts.find { it.label == "Alice" }
         assertNotNull(alice)
         assertEquals("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", alice.address)
-        assertEquals(KeyType.SR25519, alice.keyType)
 
         val bob = accounts.find { it.label == "Bob" }
         assertNotNull(bob)
         assertEquals("5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty", bob.address)
-        assertEquals(KeyType.ED25519, bob.keyType)
 
         // Step 5: Verify new AppSettings table works
         assertNull(repository.getActiveAccountId())
@@ -102,11 +99,10 @@ class DatabaseMigrationTest {
         val database = CladDatabase(driver)
         val repository = AccountRepository(database)
 
-        // Verify Account table works
+        // Verify Account table works (no keyType parameter - SR25519-only)
         val account = repository.create(
             label = "Test",
-            address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            keyType = KeyType.SR25519
+            address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
         )
         assertNotNull(account.id)
 

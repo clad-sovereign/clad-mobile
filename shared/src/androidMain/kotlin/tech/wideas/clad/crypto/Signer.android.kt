@@ -1,12 +1,12 @@
 package tech.wideas.clad.crypto
 
 /**
- * Android implementation of [Signer].
+ * Android implementation of [Signer] for SR25519 signatures.
  *
  * This is a stub implementation. Full signing will be completed in issue #23 (Transaction Signing Pipeline).
  *
  * **Implementation Notes:**
- * - Use Nova SDK's `MultiChainEncryption.Substrate` for signing
+ * - Use Nova SDK's `MultiChainEncryption.Substrate` for SR25519 signing
  * - Use Nova SDK's `SignatureVerifier` for verification
  * - Requires converting [Keypair] to Nova's internal keypair format
  *
@@ -17,17 +17,16 @@ package tech.wideas.clad.crypto
 class AndroidSigner : Signer {
 
     override fun sign(message: ByteArray, keypair: Keypair): ByteArray {
-        // TODO(#23): Implement using Nova SDK's Signer with MultiChainEncryption.Substrate
+        // TODO(#23): Implement using Nova SDK's Signer with MultiChainEncryption.Substrate (SR25519)
         throw NotImplementedError("Signing will be implemented in issue #23")
     }
 
     override fun verify(
         message: ByteArray,
         signature: ByteArray,
-        publicKey: ByteArray,
-        keyType: KeyType
+        publicKey: ByteArray
     ): Boolean {
-        // TODO(#23): Implement using Nova SDK's SignatureVerifier
+        // TODO(#23): Implement using Nova SDK's SignatureVerifier (SR25519)
         throw NotImplementedError("Signature verification will be implemented in issue #23")
     }
 }

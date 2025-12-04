@@ -1,7 +1,6 @@
 package tech.wideas.clad.crypto
 
 import kotlinx.cinterop.ExperimentalForeignApi
-import novacrypto.EDKeyFactory
 import novacrypto.IREntropy128
 import novacrypto.IREntropy256
 import novacrypto.IRMnemonicCreator
@@ -14,7 +13,7 @@ import tech.wideas.clad.util.toNSData
  * iOS implementation of [MnemonicProvider] using NovaCrypto library.
  *
  * This implementation uses the `Crypto-iOS` library (novasamatech/Crypto-iOS) which provides
- * cryptographic operations for sr25519 (Schnorrkel), ed25519, and BIP39 mnemonics.
+ * cryptographic operations for SR25519 (Schnorrkel) and BIP39 mnemonics.
  *
  * Thread Safety: This class is NOT thread-safe. The underlying NovaCrypto
  * operations may not be safe for concurrent use. Create separate instances
@@ -28,7 +27,6 @@ class IOSMnemonicProvider : MnemonicProvider {
     private val mnemonicCreator = IRMnemonicCreator.defaultCreator()
     private val seedCreator = SNBIP39SeedCreator()
     private val sr25519KeyFactory = SNKeyFactory()
-    private val ed25519KeyFactory = EDKeyFactory()
     private val junctionDecoder = JunctionDecoder()
 
     override fun generate(wordCount: MnemonicWordCount): String {
@@ -73,7 +71,6 @@ class IOSMnemonicProvider : MnemonicProvider {
     override fun toKeypair(
         mnemonic: String,
         passphrase: String,
-        keyType: KeyType,
         derivationPath: String
     ): Keypair {
         // Get the full 64-byte BIP39 seed
@@ -82,24 +79,7 @@ class IOSMnemonicProvider : MnemonicProvider {
         val miniSecret = fullSeed.copyOfRange(0, 32)
         val seedData = miniSecret.toNSData()
 
-        return when (keyType) {
-            KeyType.SR25519 -> createSr25519Keypair(seedData, derivationPath)
-            KeyType.ED25519 -> {
-                // ED25519 derivation is not supported
-                require(derivationPath.isEmpty()) {
-                    "Derivation paths are not supported for ED25519 keys on iOS"
-                }
-
-                val keypair = ed25519KeyFactory.deriveFromSeed(seedData, null)
-                    ?: throw IllegalStateException("Failed to create ED25519 keypair")
-
-                Keypair(
-                    publicKey = keypair.publicKey().rawData().toByteArray(),
-                    privateKey = keypair.privateKey().rawData().toByteArray(),
-                    keyType = KeyType.ED25519
-                )
-            }
-        }
+        return createSr25519Keypair(seedData, derivationPath)
     }
 
     /**
@@ -141,8 +121,7 @@ class IOSMnemonicProvider : MnemonicProvider {
 
         return Keypair(
             publicKey = currentKeypair.publicKey().rawData().toByteArray(),
-            privateKey = currentKeypair.privateKey().rawData().toByteArray(),
-            keyType = KeyType.SR25519
+            privateKey = currentKeypair.privateKey().rawData().toByteArray()
         )
     }
 }

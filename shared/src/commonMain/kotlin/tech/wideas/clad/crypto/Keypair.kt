@@ -32,7 +32,9 @@ object NetworkPrefix {
 }
 
 /**
- * Represents a cryptographic keypair for Substrate/Polkadot accounts.
+ * Represents an SR25519 cryptographic keypair for Substrate/Polkadot accounts.
+ *
+ * Clad Signer uses SR25519 exclusively - see KeyType removal rationale in issue #60.
  *
  * This class contains sensitive cryptographic material. Implementations should:
  * - Call [clear] when the keypair is no longer needed
@@ -42,10 +44,9 @@ object NetworkPrefix {
  * Thread Safety: This class is NOT thread-safe. Concurrent access to the same
  * instance (especially [clear]) must be externally synchronized.
  *
- * @property publicKey The public key bytes (32 bytes for both sr25519 and ed25519).
+ * @property publicKey The public key bytes (32 bytes for SR25519).
  * @property privateKey The private key bytes. SENSITIVE: Contains secret key material.
- *   Size varies by key type and SDK (typically 32-64 bytes).
- * @property keyType The cryptographic algorithm used.
+ *   Size varies by SDK (typically 64 bytes for SR25519).
  */
 data class Keypair(
     val publicKey: ByteArray,
@@ -55,8 +56,7 @@ data class Keypair(
      * - Call [clear] when no longer needed
      * - Handle with care in memory dumps and crash reports
      */
-    val privateKey: ByteArray,
-    val keyType: KeyType
+    val privateKey: ByteArray
 ) {
     /**
      * Get the SS58 encoded address for this keypair.
@@ -77,7 +77,6 @@ data class Keypair(
 
         if (!publicKey.contentEquals(other.publicKey)) return false
         if (!privateKey.contentEquals(other.privateKey)) return false
-        if (keyType != other.keyType) return false
 
         return true
     }
@@ -85,7 +84,6 @@ data class Keypair(
     override fun hashCode(): Int {
         var result = publicKey.contentHashCode()
         result = 31 * result + privateKey.contentHashCode()
-        result = 31 * result + keyType.hashCode()
         return result
     }
 
@@ -94,7 +92,7 @@ data class Keypair(
      * Safe to use in logs and debug output.
      */
     override fun toString(): String {
-        return "Keypair(keyType=$keyType, publicKey=[${publicKey.size} bytes], privateKey=[REDACTED])"
+        return "Keypair(publicKey=[${publicKey.size} bytes], privateKey=[REDACTED])"
     }
 
     /**

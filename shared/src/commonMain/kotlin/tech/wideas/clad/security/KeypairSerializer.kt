@@ -1,7 +1,6 @@
 package tech.wideas.clad.security
 
 import tech.wideas.clad.crypto.Keypair
-import tech.wideas.clad.crypto.KeyType
 
 /**
  * Serialization utilities for Keypair storage.
@@ -9,7 +8,7 @@ import tech.wideas.clad.crypto.KeyType
  * Binary format (version 1):
  * ```
  * [1 byte: version]
- * [1 byte: keyType (0=SR25519, 1=ED25519)]
+ * [1 byte: keyType (always 0=SR25519, kept for backward compatibility)]
  * [4 bytes: publicKey length (big-endian)]
  * [N bytes: publicKey]
  * [4 bytes: privateKey length (big-endian)]
@@ -20,9 +19,13 @@ import tech.wideas.clad.crypto.KeyType
  * - Forward-compatible (version byte allows future changes)
  * - Self-describing (includes lengths for variable-size keys)
  * - Platform-independent (big-endian integers)
+ *
+ * Note: The keyType byte is kept for backward compatibility with existing
+ * serialized keypairs. New keypairs always use SR25519 (0x00).
  */
 object KeypairSerializer {
     private const val VERSION: Byte = 1
+    private const val KEY_TYPE_SR25519: Byte = 0
 
     /**
      * Serialize a Keypair to a byte array.
@@ -33,10 +36,6 @@ object KeypairSerializer {
     fun serialize(keypair: Keypair): ByteArray {
         val pubKey = keypair.publicKey
         val privKey = keypair.privateKey
-        val keyTypeByte: Byte = when (keypair.keyType) {
-            KeyType.SR25519 -> 0
-            KeyType.ED25519 -> 1
-        }
 
         // Calculate total size: version(1) + keyType(1) + pubLen(4) + pub + privLen(4) + priv
         val totalSize = 1 + 1 + 4 + pubKey.size + 4 + privKey.size
@@ -46,8 +45,8 @@ object KeypairSerializer {
         // Write version
         buffer[offset++] = VERSION
 
-        // Write key type
-        buffer[offset++] = keyTypeByte
+        // Write key type (always SR25519)
+        buffer[offset++] = KEY_TYPE_SR25519
 
         // Write public key length and data
         offset = writeInt(buffer, offset, pubKey.size)
@@ -77,12 +76,10 @@ object KeypairSerializer {
         val version = data[offset++]
         require(version == VERSION) { "Unsupported serialization version: $version" }
 
-        // Read key type
+        // Read key type (kept for backward compatibility, must be SR25519)
         val keyTypeByte = data[offset++]
-        val keyType = when (keyTypeByte.toInt()) {
-            0 -> KeyType.SR25519
-            1 -> KeyType.ED25519
-            else -> throw IllegalArgumentException("Unknown key type: $keyTypeByte")
+        require(keyTypeByte == KEY_TYPE_SR25519) {
+            "Unsupported key type: $keyTypeByte. Only SR25519 (0) is supported."
         }
 
         // Read public key
@@ -100,7 +97,7 @@ object KeypairSerializer {
         require(data.size >= offset + privKeyLen) { "Data too short for private key" }
         val privKey = data.copyOfRange(offset, offset + privKeyLen)
 
-        return Keypair(pubKey, privKey, keyType)
+        return Keypair(pubKey, privKey)
     }
 
     /**

@@ -5,6 +5,8 @@ import Shared
 ///
 /// These tests verify the SQLDelight-based account persistence layer
 /// using an in-memory database for isolation.
+///
+/// Note: All accounts use SR25519 keys (see issue #60 for rationale).
 final class AccountRepositoryTests: XCTestCase {
 
     private var repository: AccountRepository!
@@ -25,44 +27,14 @@ final class AccountRepositoryTests: XCTestCase {
     func testCreateInsertsAccountAndReturnsIt() async throws {
         let account = try await repository.create(
             label: "Test Account",
-            address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            keyType: .sr25519
+            address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
         )
 
         XCTAssertFalse(account.id.isEmpty, "ID should not be empty")
         XCTAssertEqual(account.label, "Test Account")
         XCTAssertEqual(account.address, "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
-        XCTAssertEqual(account.keyType, .sr25519)
         XCTAssertGreaterThan(account.createdAt, 0, "createdAt should be set")
         XCTAssertNil(account.lastUsedAt, "lastUsedAt should be nil initially")
-    }
-
-    func testCreateSupportsED25519KeyType() async throws {
-        let account = try await repository.create(
-            label: "ED25519 Account",
-            address: "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-            keyType: .ed25519
-        )
-
-        XCTAssertEqual(account.keyType, .ed25519)
-
-        let retrieved = try await repository.getById(id: account.id)
-        XCTAssertNotNil(retrieved)
-        XCTAssertEqual(retrieved?.keyType, .ed25519)
-    }
-
-    func testCreateSupportsSR25519KeyType() async throws {
-        let account = try await repository.create(
-            label: "SR25519 Account",
-            address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            keyType: .sr25519
-        )
-
-        XCTAssertEqual(account.keyType, .sr25519)
-
-        let retrieved = try await repository.getById(id: account.id)
-        XCTAssertNotNil(retrieved)
-        XCTAssertEqual(retrieved?.keyType, .sr25519)
     }
 
     // MARK: - GetById Tests
@@ -70,8 +42,7 @@ final class AccountRepositoryTests: XCTestCase {
     func testGetByIdReturnsAccount() async throws {
         let created = try await repository.create(
             label: "Test",
-            address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            keyType: .ed25519
+            address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
         )
 
         let retrieved = try await repository.getById(id: created.id)
@@ -80,7 +51,6 @@ final class AccountRepositoryTests: XCTestCase {
         XCTAssertEqual(retrieved?.id, created.id)
         XCTAssertEqual(retrieved?.label, created.label)
         XCTAssertEqual(retrieved?.address, created.address)
-        XCTAssertEqual(retrieved?.keyType, created.keyType)
     }
 
     func testGetByIdReturnsNilForNonExistent() async throws {
@@ -94,8 +64,7 @@ final class AccountRepositoryTests: XCTestCase {
         let address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
         let created = try await repository.create(
             label: "Test",
-            address: address,
-            keyType: .sr25519
+            address: address
         )
 
         let retrieved = try await repository.getByAddress(address: address)
@@ -113,11 +82,11 @@ final class AccountRepositoryTests: XCTestCase {
 
     func testGetAllReturnsAllAccountsOrderedByCreatedAtDesc() async throws {
         // Add small delays to ensure distinct timestamps
-        _ = try await repository.create(label: "First", address: "5Address1", keyType: .sr25519)
+        _ = try await repository.create(label: "First", address: "5Address1")
         try await Task.sleep(nanoseconds: 10_000_000) // 10ms
-        _ = try await repository.create(label: "Second", address: "5Address2", keyType: .ed25519)
+        _ = try await repository.create(label: "Second", address: "5Address2")
         try await Task.sleep(nanoseconds: 10_000_000) // 10ms
-        _ = try await repository.create(label: "Third", address: "5Address3", keyType: .sr25519)
+        _ = try await repository.create(label: "Third", address: "5Address3")
 
         let accounts = try await repository.getAll()
 
@@ -133,8 +102,7 @@ final class AccountRepositoryTests: XCTestCase {
     func testUpdateLabelChangesAccountLabel() async throws {
         let account = try await repository.create(
             label: "Original",
-            address: "5Address",
-            keyType: .sr25519
+            address: "5Address"
         )
 
         try await repository.updateLabel(id: account.id, label: "Updated")
@@ -149,8 +117,7 @@ final class AccountRepositoryTests: XCTestCase {
     func testMarkAsUsedUpdatesLastUsedAt() async throws {
         let account = try await repository.create(
             label: "Test",
-            address: "5Address",
-            keyType: .sr25519
+            address: "5Address"
         )
         XCTAssertNil(account.lastUsedAt)
 
@@ -167,8 +134,7 @@ final class AccountRepositoryTests: XCTestCase {
     func testDeleteRemovesAccount() async throws {
         let account = try await repository.create(
             label: "Test",
-            address: "5Address",
-            keyType: .sr25519
+            address: "5Address"
         )
 
         try await repository.delete(id: account.id)
@@ -183,11 +149,11 @@ final class AccountRepositoryTests: XCTestCase {
         let initialCount = try await repository.count()
         XCTAssertEqual(initialCount, 0)
 
-        _ = try await repository.create(label: "First", address: "5Address1", keyType: .sr25519)
+        _ = try await repository.create(label: "First", address: "5Address1")
         let countAfterFirst = try await repository.count()
         XCTAssertEqual(countAfterFirst, 1)
 
-        _ = try await repository.create(label: "Second", address: "5Address2", keyType: .ed25519)
+        _ = try await repository.create(label: "Second", address: "5Address2")
         let countAfterSecond = try await repository.count()
         XCTAssertEqual(countAfterSecond, 2)
     }

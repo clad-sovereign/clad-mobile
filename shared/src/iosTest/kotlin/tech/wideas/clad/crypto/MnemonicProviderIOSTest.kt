@@ -112,19 +112,8 @@ class MnemonicProviderIOSTest {
     @Test
     fun `toKeypair generates sr25519 keypair`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val keypair = provider.toKeypair(mnemonic)
 
-        assertEquals(KeyType.SR25519, keypair.keyType)
-        assertEquals(32, keypair.publicKey.size, "Public key should be 32 bytes")
-        assertTrue(keypair.privateKey.isNotEmpty(), "Private key should not be empty")
-    }
-
-    @Test
-    fun `toKeypair generates ed25519 keypair`() {
-        val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair = provider.toKeypair(mnemonic, keyType = KeyType.ED25519)
-
-        assertEquals(KeyType.ED25519, keypair.keyType)
         assertEquals(32, keypair.publicKey.size, "Public key should be 32 bytes")
         assertTrue(keypair.privateKey.isNotEmpty(), "Private key should not be empty")
     }
@@ -132,8 +121,8 @@ class MnemonicProviderIOSTest {
     @Test
     fun `toKeypair is deterministic for same mnemonic`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair1 = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
-        val keypair2 = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val keypair1 = provider.toKeypair(mnemonic)
+        val keypair2 = provider.toKeypair(mnemonic)
 
         assertTrue(
             keypair1.publicKey.contentEquals(keypair2.publicKey),
@@ -145,8 +134,8 @@ class MnemonicProviderIOSTest {
     fun `different mnemonics produce different keypairs`() {
         val mnemonic1 = provider.generate(MnemonicWordCount.WORDS_12)
         val mnemonic2 = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair1 = provider.toKeypair(mnemonic1, keyType = KeyType.SR25519)
-        val keypair2 = provider.toKeypair(mnemonic2, keyType = KeyType.SR25519)
+        val keypair1 = provider.toKeypair(mnemonic1)
+        val keypair2 = provider.toKeypair(mnemonic2)
 
         assertTrue(
             !keypair1.publicKey.contentEquals(keypair2.publicKey),
@@ -163,8 +152,7 @@ class MnemonicProviderIOSTest {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
         val keypair = provider.toKeypair(
             mnemonic,
-            passphrase = "test-passphrase",
-            keyType = KeyType.SR25519
+            passphrase = "test-passphrase"
         )
 
         assertEquals(32, keypair.publicKey.size, "Public key should be 32 bytes")
@@ -174,8 +162,8 @@ class MnemonicProviderIOSTest {
     @Test
     fun `toKeypair passphrase is case sensitive`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypairLower = provider.toKeypair(mnemonic, passphrase = "password", keyType = KeyType.SR25519)
-        val keypairUpper = provider.toKeypair(mnemonic, passphrase = "PASSWORD", keyType = KeyType.SR25519)
+        val keypairLower = provider.toKeypair(mnemonic, passphrase = "password")
+        val keypairUpper = provider.toKeypair(mnemonic, passphrase = "PASSWORD")
 
         assertTrue(
             !keypairLower.publicKey.contentEquals(keypairUpper.publicKey),

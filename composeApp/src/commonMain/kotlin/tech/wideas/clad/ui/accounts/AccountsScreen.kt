@@ -367,19 +367,6 @@ private fun AccountCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
-
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            text = account.keyType.name,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    },
-                    enabled = false,
-                    modifier = Modifier.height(24.dp)
-                )
             }
 
             Row {

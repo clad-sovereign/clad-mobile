@@ -152,12 +152,8 @@ fun ImportScreen(
                         address = flowState.address,
                         isWatchOnly = flowState.keypair == null,
                         label = uiState.accountLabel,
-                        keyType = uiState.keyType,
                         onLabelChanged = { label ->
                             viewModel.updateAccountLabel(label)
-                        },
-                        onKeyTypeChanged = { keyType ->
-                            viewModel.updateKeyType(keyType)
                         },
                         onConfirm = {
                             scope.launch {

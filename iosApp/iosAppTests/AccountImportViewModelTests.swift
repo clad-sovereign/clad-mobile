@@ -53,7 +53,6 @@ final class AccountImportViewModelTests: XCTestCase {
         XCTAssertTrue(data.address.isEmpty)
         XCTAssertTrue(data.label.isEmpty)
         XCTAssertFalse(data.isWatchOnly)
-        XCTAssertEqual(data.keyType, .sr25519)
     }
 
     // MARK: - Word Count Tests
@@ -171,7 +170,6 @@ final class AccountImportViewModelTests: XCTestCase {
         let keypair = mnemonicProvider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
@@ -241,7 +239,6 @@ final class AccountImportViewModelTests: XCTestCase {
         let keypair = mnemonicProvider.toKeypair(
             mnemonic: testMnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 

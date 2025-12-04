@@ -65,15 +65,16 @@ class CrossPlatformDeterminismTest {
     }
 
     /**
-     * Test Vector 2 (ED25519): Expected output for mnemonic without derivation path.
+     * Test Vector 2 (SR25519): Additional test vector for SS58 encoding verification.
      *
-     * SINGLE SOURCE OF TRUTH - duplicated in platform-specific tests.
-     * Source: `subkey inspect --scheme ed25519 "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"`
+     * This vector uses the same public key from a different mnemonic to verify
+     * SS58 encode/decode independently of keypair generation.
+     *
+     * Note: ED25519 test vectors removed in issue #60 (SR25519-only simplification).
      */
-    object TestVector2Ed25519 {
-        const val MNEMONIC = "infant salmon buzz patrol maple subject turtle cute legend song vital leisure"
-        const val EXPECTED_PUBLIC_KEY_HEX = "1a0e2bf1e0195a1f5396c5fd209a620a48fe90f6f336d89c89405a0183a857a3"
-        const val EXPECTED_SS58_ADDRESS = "5CesK3uTmn4NGfD3oyGBd1jrp4EfRyYdtqL3ERe9SXv8jUHb"
+    object TestVector2 {
+        const val PUBLIC_KEY_HEX = "1a0e2bf1e0195a1f5396c5fd209a620a48fe90f6f336d89c89405a0183a857a3"
+        const val SS58_ADDRESS = "5CesK3uTmn4NGfD3oyGBd1jrp4EfRyYdtqL3ERe9SXv8jUHb"
     }
 
     // ============================================================================
@@ -133,25 +134,25 @@ class CrossPlatformDeterminismTest {
     }
 
     @Test
-    fun `SS58 encoding for TestVector2 ED25519 expected public key produces expected address`() {
-        val publicKey = hexToBytes(TestVector2Ed25519.EXPECTED_PUBLIC_KEY_HEX)
+    fun `SS58 encoding for TestVector2 public key produces expected address`() {
+        val publicKey = hexToBytes(TestVector2.PUBLIC_KEY_HEX)
         val address = Ss58.encode(publicKey, NetworkPrefix.GENERIC_SUBSTRATE)
 
         assertEquals(
-            TestVector2Ed25519.EXPECTED_SS58_ADDRESS,
+            TestVector2.SS58_ADDRESS,
             address,
-            "SS58 encoding of TestVector2 (ED25519) public key should produce expected address"
+            "SS58 encoding of TestVector2 public key should produce expected address"
         )
     }
 
     @Test
-    fun `SS58 decode extracts correct public key from ED25519 address`() {
-        val (decodedPublicKey, decodedPrefix) = Ss58.decode(TestVector2Ed25519.EXPECTED_SS58_ADDRESS)
+    fun `SS58 decode extracts correct public key from TestVector2 address`() {
+        val (decodedPublicKey, decodedPrefix) = Ss58.decode(TestVector2.SS58_ADDRESS)
 
         assertEquals(
-            TestVector2Ed25519.EXPECTED_PUBLIC_KEY_HEX,
+            TestVector2.PUBLIC_KEY_HEX,
             decodedPublicKey.toHexString(),
-            "Decoded public key should match ED25519 known public key"
+            "Decoded public key should match TestVector2 known public key"
         )
         assertEquals(
             NetworkPrefix.GENERIC_SUBSTRATE,

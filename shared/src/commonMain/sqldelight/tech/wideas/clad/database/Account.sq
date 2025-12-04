@@ -1,5 +1,6 @@
 -- Account table for storing non-sensitive account metadata.
 -- Sensitive data (keypairs) is stored in KeyStorage with biometric protection.
+-- All accounts use SR25519 keys (see issue #60 for rationale).
 
 CREATE TABLE Account (
     -- Unique identifier (UUID v4 string)
@@ -10,9 +11,6 @@ CREATE TABLE Account (
 
     -- SS58-encoded public address (e.g., "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
     address TEXT NOT NULL UNIQUE,
-
-    -- Cryptographic key type: "SR25519" or "ED25519"
-    keyType TEXT NOT NULL,
 
     -- Timestamp when account was created (epoch milliseconds)
     createdAt INTEGER NOT NULL,
@@ -41,8 +39,8 @@ WHERE address = ?;
 
 -- Insert a new account
 insert:
-INSERT INTO Account (id, label, address, keyType, createdAt, lastUsedAt)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO Account (id, label, address, createdAt, lastUsedAt)
+VALUES (?, ?, ?, ?, ?);
 
 -- Update account label
 updateLabel:

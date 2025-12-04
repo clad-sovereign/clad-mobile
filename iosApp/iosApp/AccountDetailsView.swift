@@ -149,30 +149,19 @@ private struct AccountHeaderSection: View {
                     .font(CladTypography.headlineSmall)
                     .foregroundColor(colors.onBackground)
 
-                HStack(spacing: 8) {
-                    // Key type chip
-                    Text(account.keyType == .sr25519 ? "SR25519" : "ED25519")
-                        .font(CladTypography.caption)
-                        .foregroundColor(colors.onSurfaceVariant)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(colors.surfaceVariant)
-                        .cornerRadius(4)
-
-                    // Active badge
-                    if isActive {
-                        HStack(spacing: 4) {
-                            Image(systemName: "checkmark")
-                                .font(.caption2)
-                            Text("Active")
-                                .font(CladTypography.caption)
-                        }
-                        .foregroundColor(colors.onPrimary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(colors.primary)
-                        .cornerRadius(4)
+                // Active badge
+                if isActive {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark")
+                            .font(.caption2)
+                        Text("Active")
+                            .font(CladTypography.caption)
                     }
+                    .foregroundColor(colors.onPrimary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(colors.primary)
+                    .cornerRadius(4)
                 }
             }
 
@@ -236,7 +225,6 @@ private struct AccountInfoSectionView: View {
                 .foregroundColor(colors.onBackground)
 
             VStack(spacing: 16) {
-                InfoRow(label: "Key Type", value: account.keyType == .sr25519 ? "SR25519" : "ED25519", colors: colors)
                 InfoRow(label: "Created", value: formatTimestamp(account.createdAt), colors: colors)
 
                 if let lastUsed = account.lastUsedAt {

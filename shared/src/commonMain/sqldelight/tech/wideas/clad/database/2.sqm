@@ -1,0 +1,22 @@
+-- Migration from schema version 2 to 3
+-- Removes keyType column from Account table (issue #60: SR25519-only simplification)
+-- SQLite doesn't support DROP COLUMN, so we recreate the table
+
+-- Create new table without keyType
+CREATE TABLE Account_new (
+    id TEXT NOT NULL PRIMARY KEY,
+    label TEXT NOT NULL,
+    address TEXT NOT NULL UNIQUE,
+    createdAt INTEGER NOT NULL,
+    lastUsedAt INTEGER
+);
+
+-- Copy data (dropping keyType column)
+INSERT INTO Account_new (id, label, address, createdAt, lastUsedAt)
+SELECT id, label, address, createdAt, lastUsedAt FROM Account;
+
+-- Drop old table
+DROP TABLE Account;
+
+-- Rename new table
+ALTER TABLE Account_new RENAME TO Account;

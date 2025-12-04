@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import tech.wideas.clad.crypto.KeyType
 import tech.wideas.clad.database.Account
 import tech.wideas.clad.database.CladDatabase
 import kotlin.uuid.ExperimentalUuidApi
@@ -22,11 +21,11 @@ private const val ACTIVE_ACCOUNT_KEY = "active_account_id"
  *
  * This contains only non-sensitive metadata. The actual keypair
  * is stored separately in [KeyStorage] with biometric protection.
+ * All accounts use SR25519 keys (see issue #60 for rationale).
  *
  * @property id Unique identifier (UUID v4)
  * @property label User-defined display name
  * @property address SS58-encoded public address
- * @property keyType Cryptographic algorithm (SR25519 or ED25519)
  * @property createdAt Timestamp when account was created (epoch milliseconds)
  * @property lastUsedAt Timestamp when account was last used for signing (nullable)
  */
@@ -34,7 +33,6 @@ data class AccountInfo(
     val id: String,
     val label: String,
     val address: String,
-    val keyType: KeyType,
     val createdAt: Long,
     val lastUsedAt: Long? = null
 )
@@ -116,15 +114,13 @@ class AccountRepository(private val database: CladDatabase) {
      *
      * @param label User-defined display name
      * @param address SS58-encoded public address
-     * @param keyType Cryptographic algorithm used
      * @return The created account with generated ID
      * @throws IllegalStateException if address already exists
      */
     @OptIn(ExperimentalUuidApi::class)
     suspend fun create(
         label: String,
-        address: String,
-        keyType: KeyType
+        address: String
     ): AccountInfo = withContext(Dispatchers.IO) {
         // Check for duplicate address before insert
         val existing = queries.selectByAddress(address).executeAsOneOrNull()
@@ -139,7 +135,6 @@ class AccountRepository(private val database: CladDatabase) {
             id = id,
             label = label,
             address = address,
-            keyType = keyType.name,
             createdAt = createdAt,
             lastUsedAt = null
         )
@@ -148,7 +143,6 @@ class AccountRepository(private val database: CladDatabase) {
             id = id,
             label = label,
             address = address,
-            keyType = keyType,
             createdAt = createdAt,
             lastUsedAt = null
         )
@@ -271,7 +265,6 @@ private fun Account.toAccountInfo(): AccountInfo {
         id = id,
         label = label,
         address = address,
-        keyType = KeyType.valueOf(keyType),
         createdAt = createdAt,
         lastUsedAt = lastUsedAt
     )

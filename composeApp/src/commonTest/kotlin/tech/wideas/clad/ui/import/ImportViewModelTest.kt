@@ -2,7 +2,6 @@ package tech.wideas.clad.ui.import
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import tech.wideas.clad.crypto.KeyType
 import tech.wideas.clad.data.AccountInfo
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,7 +36,6 @@ class ImportViewModelTest {
         assertEquals("", state.manualAddress)
         assertNull(state.addressError)
         assertEquals("", state.accountLabel)
-        assertEquals(KeyType.SR25519, state.keyType)
         assertNull(state.error)
     }
 
@@ -378,7 +376,6 @@ class ImportViewModelTest {
             id = "test-account-id",
             label = "Test Account",
             address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            keyType = KeyType.SR25519,
             createdAt = System.currentTimeMillis()
         )
     }

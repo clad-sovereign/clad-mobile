@@ -1,7 +1,6 @@
 package tech.wideas.clad.security
 
 import tech.wideas.clad.crypto.Keypair
-import tech.wideas.clad.crypto.KeyType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -13,8 +12,7 @@ class KeypairSerializerTest {
     fun `serialize and deserialize SR25519 keypair`() {
         val original = Keypair(
             publicKey = ByteArray(32) { it.toByte() },
-            privateKey = ByteArray(64) { (it + 100).toByte() },
-            keyType = KeyType.SR25519
+            privateKey = ByteArray(64) { (it + 100).toByte() }
         )
 
         val serialized = KeypairSerializer.serialize(original)
@@ -22,31 +20,13 @@ class KeypairSerializerTest {
 
         assertTrue(original.publicKey.contentEquals(deserialized.publicKey))
         assertTrue(original.privateKey.contentEquals(deserialized.privateKey))
-        assertEquals(original.keyType, deserialized.keyType)
-    }
-
-    @Test
-    fun `serialize and deserialize ED25519 keypair`() {
-        val original = Keypair(
-            publicKey = ByteArray(32) { (255 - it).toByte() },
-            privateKey = ByteArray(32) { (it * 2).toByte() },
-            keyType = KeyType.ED25519
-        )
-
-        val serialized = KeypairSerializer.serialize(original)
-        val deserialized = KeypairSerializer.deserialize(serialized)
-
-        assertTrue(original.publicKey.contentEquals(deserialized.publicKey))
-        assertTrue(original.privateKey.contentEquals(deserialized.privateKey))
-        assertEquals(original.keyType, deserialized.keyType)
     }
 
     @Test
     fun `serialized format has correct structure`() {
         val keypair = Keypair(
             publicKey = ByteArray(32) { 0xAA.toByte() },
-            privateKey = ByteArray(64) { 0xBB.toByte() },
-            keyType = KeyType.SR25519
+            privateKey = ByteArray(64) { 0xBB.toByte() }
         )
 
         val serialized = KeypairSerializer.serialize(keypair)
@@ -57,7 +37,7 @@ class KeypairSerializerTest {
         // Version byte
         assertEquals(1, serialized[0].toInt())
 
-        // Key type (0 = SR25519)
+        // Key type (0 = SR25519, always)
         assertEquals(0, serialized[1].toInt())
 
         // Public key length (big-endian: 0, 0, 0, 32)
@@ -87,10 +67,10 @@ class KeypairSerializerTest {
     }
 
     @Test
-    fun `deserialize fails with invalid key type`() {
+    fun `deserialize fails with non-SR25519 key type`() {
         val invalidData = ByteArray(20) { 0 }
         invalidData[0] = 1 // Valid version
-        invalidData[1] = 99 // Invalid key type
+        invalidData[1] = 1 // ED25519 key type (no longer supported)
 
         assertFailsWith<IllegalArgumentException> {
             KeypairSerializer.deserialize(invalidData)
@@ -105,8 +85,7 @@ class KeypairSerializerTest {
         for ((pubSize, privSize) in keySizes) {
             val original = Keypair(
                 publicKey = ByteArray(pubSize) { it.toByte() },
-                privateKey = ByteArray(privSize) { it.toByte() },
-                keyType = KeyType.ED25519
+                privateKey = ByteArray(privSize) { it.toByte() }
             )
 
             val serialized = KeypairSerializer.serialize(original)

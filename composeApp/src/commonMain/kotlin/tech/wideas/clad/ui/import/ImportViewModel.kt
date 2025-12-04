@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import tech.wideas.clad.crypto.KeyType
 import tech.wideas.clad.crypto.Keypair
 import tech.wideas.clad.crypto.MnemonicProvider
 import tech.wideas.clad.crypto.MnemonicValidationResult
@@ -82,9 +81,6 @@ data class ImportUiState(
 
     // Labeling
     val accountLabel: String = "",
-
-    // Key type selection
-    val keyType: KeyType = KeyType.SR25519,
 
     // General error
     val error: String? = null
@@ -230,8 +226,7 @@ class ImportViewModel(
                 is MnemonicValidationResult.Valid -> {
                     try {
                         val keypair = mnemonicProvider.toKeypair(
-                            mnemonic = mnemonic,
-                            keyType = _uiState.value.keyType
+                            mnemonic = mnemonic
                         )
 
                         derivedKeypair = keypair
@@ -419,10 +414,6 @@ class ImportViewModel(
         _uiState.value = _uiState.value.copy(accountLabel = sanitized)
     }
 
-    fun updateKeyType(keyType: KeyType) {
-        _uiState.value = _uiState.value.copy(keyType = keyType)
-    }
-
     /**
      * Save the imported account.
      * For seed phrase imports, requires biometric authentication.
@@ -452,8 +443,7 @@ class ImportViewModel(
             // Create account in database
             val account = accountRepository.create(
                 label = label,
-                address = confirmingState.address,
-                keyType = if (keypair != null) keypair.keyType else state.keyType
+                address = confirmingState.address
             )
 
             // If we have a keypair, save it with biometric protection
