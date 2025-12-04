@@ -64,6 +64,7 @@ data class Junction(
  * - Names > 32 bytes: Rejected (not supported)
  *
  * @see [Nova SDK SubstrateJunctionDecoder](https://github.com/novasamatech/substrate-sdk-android/blob/master/substrate-sdk-android/src/main/java/io/novasama/substrate_sdk_android/encrypt/junction/SubstrateJunctionDecoder.kt)
+ * @see [Substrate DeriveJunction](https://github.com/paritytech/polkadot-sdk/blob/master/substrate/primitives/core/src/crypto.rs)
  */
 class JunctionDecoder {
 
@@ -143,7 +144,15 @@ class JunctionDecoder {
     /**
      * Serialize a junction name to bytes.
      *
-     * Tries numeric parsing first (little-endian u64), then hex, then UTF-8.
+     * Tries numeric parsing first (little-endian u64), then hex, then SCALE-encoded UTF-8 string.
+     *
+     * IMPORTANT: Substrate's DeriveJunction.hard()/soft() methods SCALE-encode the junction name
+     * before using it as the chaincode. SCALE encoding for strings includes a length prefix:
+     * - Compact integer format: length * 4 for lengths < 64 (single byte)
+     * - Then the raw UTF-8 bytes
+     *
+     * For example, "Alice" (5 bytes) becomes: [0x14, 'A', 'l', 'i', 'c', 'e'] = [0x14, 0x41, 0x6c, 0x69, 0x63, 0x65]
+     * where 0x14 = 5 * 4 = 20 in SCALE compact integer format.
      */
     private fun serialize(junctionName: String): ByteArray {
         // Try numeric first (Substrate uses u64 little-endian)
@@ -159,8 +168,33 @@ class JunctionDecoder {
             }
         }
 
-        // Default: UTF-8 string bytes
-        return junctionName.encodeToByteArray()
+        // Default: SCALE-encoded UTF-8 string
+        // Substrate's DeriveJunction uses SCALE encoding (length prefix + raw bytes)
+        return scaleEncodeString(junctionName)
+    }
+
+    /**
+     * SCALE-encode a string for use as a chaincode.
+     *
+     * SCALE compact encoding for length (simplified for lengths < 64 which we enforce):
+     * - Length * 4 as a single byte (since lengths < 64 fit in 6 bits, shifted left by 2)
+     *
+     * @see [SCALE codec specification](https://docs.substrate.io/reference/scale-codec/)
+     */
+    private fun scaleEncodeString(value: String): ByteArray {
+        val utf8Bytes = value.encodeToByteArray()
+        val length = utf8Bytes.size
+
+        // We only support lengths < 64 for single-byte compact encoding
+        // This is enforced by our 32-byte chaincode limit anyway
+        require(length < 64) {
+            "Junction name too long for compact SCALE encoding: $length bytes"
+        }
+
+        // Compact encoding: length * 4 (left shift by 2, low 2 bits = 0 for single-byte mode)
+        val compactLength = (length shl 2).toByte()
+
+        return byteArrayOf(compactLength) + utf8Bytes
     }
 
     /**
