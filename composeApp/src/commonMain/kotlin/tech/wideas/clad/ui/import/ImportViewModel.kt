@@ -211,6 +211,23 @@ class ImportViewModel(
         }
     }
 
+    /**
+     * Handle pasting a full recovery phrase.
+     * Automatically detects 12 or 24 word phrases and fills all fields.
+     */
+    fun pasteFullPhrase(pastedWords: List<String>) {
+        val count = pastedWords.size
+        require(count == 12 || count == 24) { "Pasted phrase must be 12 or 24 words" }
+
+        val cleanedWords = pastedWords.map { it.lowercase().trim() }
+
+        _uiState.value = _uiState.value.copy(
+            wordCount = count,
+            seedPhraseWords = cleanedWords,
+            mnemonicError = null
+        )
+    }
+
     fun validateAndDeriveSeedPhrase() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
