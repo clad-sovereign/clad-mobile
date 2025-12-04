@@ -29,6 +29,7 @@ class IOSMnemonicProvider : MnemonicProvider {
     private val seedCreator = SNBIP39SeedCreator()
     private val sr25519KeyFactory = SNKeyFactory()
     private val ed25519KeyFactory = EDKeyFactory()
+    private val junctionDecoder = JunctionDecoder()
 
     override fun generate(wordCount: MnemonicWordCount): String {
         val strength = when (wordCount) {
@@ -104,6 +105,9 @@ class IOSMnemonicProvider : MnemonicProvider {
     /**
      * Create an SR25519 keypair with optional derivation path.
      *
+     * Note: Inherits the thread-safety constraints of the parent class.
+     * The underlying NovaCrypto derivation operations are not thread-safe.
+     *
      * @param seedData The 32-byte mini-secret as NSData
      * @param derivationPath Substrate derivation path (e.g., "//Alice", "//hard/soft")
      * @return The derived keypair
@@ -113,34 +117,24 @@ class IOSMnemonicProvider : MnemonicProvider {
         var currentKeypair = sr25519KeyFactory.createKeypairFromSeed(seedData, null)
             ?: throw IllegalStateException("Failed to create SR25519 keypair from seed")
 
-        // If no derivation path, return base keypair
-        if (derivationPath.isEmpty()) {
-            return Keypair(
-                publicKey = currentKeypair.publicKey().rawData().toByteArray(),
-                privateKey = currentKeypair.privateKey().rawData().toByteArray(),
-                keyType = KeyType.SR25519
-            )
-        }
+        // Apply derivation junctions if path is provided
+        if (derivationPath.isNotEmpty()) {
+            for (junction in junctionDecoder.decode(derivationPath)) {
+                val chaincodeData = junction.chaincode.toNSData()
 
-        // Parse derivation path into junctions
-        val junctions = JunctionDecoder().decode(derivationPath)
-
-        // Apply each junction iteratively
-        for (junction in junctions) {
-            val chaincodeData = junction.chaincode.toNSData()
-
-            currentKeypair = when (junction.type) {
-                JunctionType.HARD -> {
-                    sr25519KeyFactory.createKeypairHard(currentKeypair, chaincodeData, null)
-                        ?: throw IllegalStateException(
-                            "Failed to apply hard derivation for junction in path: $derivationPath"
-                        )
-                }
-                JunctionType.SOFT -> {
-                    sr25519KeyFactory.createKeypairSoft(currentKeypair, chaincodeData, null)
-                        ?: throw IllegalStateException(
-                            "Failed to apply soft derivation for junction in path: $derivationPath"
-                        )
+                currentKeypair = when (junction.type) {
+                    JunctionType.HARD -> {
+                        sr25519KeyFactory.createKeypairHard(currentKeypair, chaincodeData, null)
+                            ?: throw IllegalStateException(
+                                "Failed to apply hard derivation for junction in path: $derivationPath"
+                            )
+                    }
+                    JunctionType.SOFT -> {
+                        sr25519KeyFactory.createKeypairSoft(currentKeypair, chaincodeData, null)
+                            ?: throw IllegalStateException(
+                                "Failed to apply soft derivation for junction in path: $derivationPath"
+                            )
+                    }
                 }
             }
         }

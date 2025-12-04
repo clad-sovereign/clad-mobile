@@ -321,6 +321,90 @@ final class MnemonicProviderTests: XCTestCase {
         )
     }
 
+    // MARK: - SR25519 Derivation Path Tests
+
+    func testSr25519DerivationWithHardJunction() {
+        let mnemonic = provider.generate(wordCount: .words12)
+        let keypair = provider.toKeypair(
+            mnemonic: mnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: "//Alice"
+        )
+
+        XCTAssertEqual(keypair.keyType, .sr25519)
+        XCTAssertEqual(Int(keypair.publicKey.size), 32, "Public key should be 32 bytes")
+        XCTAssertGreaterThan(Int(keypair.privateKey.size), 0, "Private key should not be empty")
+    }
+
+    func testSr25519DerivationWithSoftJunction() {
+        let mnemonic = provider.generate(wordCount: .words12)
+        let keypair = provider.toKeypair(
+            mnemonic: mnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: "/soft"
+        )
+
+        XCTAssertEqual(keypair.keyType, .sr25519)
+        XCTAssertEqual(Int(keypair.publicKey.size), 32, "Public key should be 32 bytes")
+    }
+
+    func testSr25519DerivationWithMixedJunctions() {
+        let mnemonic = provider.generate(wordCount: .words12)
+        let keypair = provider.toKeypair(
+            mnemonic: mnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: "//hard/soft"
+        )
+
+        XCTAssertEqual(keypair.keyType, .sr25519)
+        XCTAssertEqual(Int(keypair.publicKey.size), 32, "Public key should be 32 bytes")
+    }
+
+    func testSr25519DerivationProducesDifferentKeyThanNoDerivation() {
+        let mnemonic = provider.generate(wordCount: .words12)
+        let keypairNoPath = provider.toKeypair(
+            mnemonic: mnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: ""
+        )
+        let keypairWithPath = provider.toKeypair(
+            mnemonic: mnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: "//Alice"
+        )
+
+        XCTAssertFalse(
+            byteArraysEqual(keypairNoPath.publicKey, keypairWithPath.publicKey),
+            "Derivation path should produce different key"
+        )
+    }
+
+    func testSr25519DerivationIsDeterministic() {
+        let mnemonic = provider.generate(wordCount: .words12)
+        let keypair1 = provider.toKeypair(
+            mnemonic: mnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: "//Alice"
+        )
+        let keypair2 = provider.toKeypair(
+            mnemonic: mnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: "//Alice"
+        )
+
+        XCTAssertTrue(
+            byteArraysEqual(keypair1.publicKey, keypair2.publicKey),
+            "Same derivation path should produce same key"
+        )
+    }
+
     // MARK: - Passphrase Tests
 
     func testToKeypairWithPassphraseProducesValidKeypair() {
