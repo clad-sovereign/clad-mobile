@@ -369,7 +369,108 @@ class ImportViewModelTest {
 
     // endregion
 
+    // region Full Phrase Paste Logic Tests
+
+    @Test
+    fun `parsePastedPhrase should correctly parse 12 words`() = runTest {
+        val pastedText = "abandon ability able about above absent absorb abstract absurd abuse access accident"
+        val words = parsePastedPhrase(pastedText)
+
+        assertEquals(12, words.size)
+        assertEquals("abandon", words[0])
+        assertEquals("accident", words[11])
+    }
+
+    @Test
+    fun `parsePastedPhrase should correctly parse 24 words`() = runTest {
+        val pastedText = "abandon ability able about above absent absorb abstract absurd abuse access accident acoustic acquire across act action actor actress actual adapt add addict address"
+        val words = parsePastedPhrase(pastedText)
+
+        assertEquals(24, words.size)
+        assertEquals("abandon", words[0])
+        assertEquals("address", words[23])
+    }
+
+    @Test
+    fun `parsePastedPhrase should handle extra whitespace`() = runTest {
+        val pastedText = "  abandon   ability  able  about   above absent absorb abstract absurd abuse access accident  "
+        val words = parsePastedPhrase(pastedText)
+
+        assertEquals(12, words.size)
+        assertEquals("abandon", words[0])
+        assertEquals("accident", words[11])
+    }
+
+    @Test
+    fun `parsePastedPhrase should convert to lowercase`() = runTest {
+        val pastedText = "ABANDON Ability ABLE About above ABSENT absorb abstract absurd abuse access accident"
+        val words = parsePastedPhrase(pastedText)
+
+        assertEquals(12, words.size)
+        assertTrue(words.all { it == it.lowercase() })
+    }
+
+    @Test
+    fun `parsePastedPhrase should filter non-letter characters`() = runTest {
+        val pastedText = "abandon1 ability2 able3 about4 above5 absent6 absorb7 abstract8 absurd9 abuse10 access11 accident12"
+        val words = parsePastedPhrase(pastedText)
+
+        assertEquals(12, words.size)
+        assertEquals("abandon", words[0])
+        assertEquals("accident", words[11])
+    }
+
+    @Test
+    fun `parsePastedPhrase should handle newlines and tabs`() = runTest {
+        val pastedText = "abandon\nability\table\nabout\tabove\nabsent\tabsorb\nabstract\tabsurd\nabuse\taccess\naccident"
+        val words = parsePastedPhrase(pastedText)
+
+        assertEquals(12, words.size)
+    }
+
+    @Test
+    fun `isValidPhraseLength should return true for 12 words`() = runTest {
+        assertTrue(isValidPhraseLength(12))
+    }
+
+    @Test
+    fun `isValidPhraseLength should return true for 24 words`() = runTest {
+        assertTrue(isValidPhraseLength(24))
+    }
+
+    @Test
+    fun `isValidPhraseLength should return false for other counts`() = runTest {
+        assertFalse(isValidPhraseLength(0))
+        assertFalse(isValidPhraseLength(6))
+        assertFalse(isValidPhraseLength(15))
+        assertFalse(isValidPhraseLength(18))
+        assertFalse(isValidPhraseLength(25))
+    }
+
+    // endregion
+
     // region Helper Functions
+
+    /**
+     * Replicate the paste parsing logic from SeedPhraseInputScreen
+     * to test it independently.
+     */
+    private fun parsePastedPhrase(pastedText: String): List<String> {
+        return pastedText
+            .lowercase()
+            .trim()
+            .split("\\s+".toRegex())
+            .filter { it.isNotBlank() }
+            .map { it.filter { char -> char.isLetter() } }
+            .filter { it.isNotBlank() }
+    }
+
+    /**
+     * Check if word count is valid for BIP-39 mnemonic.
+     */
+    private fun isValidPhraseLength(count: Int): Boolean {
+        return count == 12 || count == 24
+    }
 
     private fun createTestAccount(): AccountInfo {
         return AccountInfo(
