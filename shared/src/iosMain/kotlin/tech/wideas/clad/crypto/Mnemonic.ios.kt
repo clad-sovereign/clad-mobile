@@ -75,11 +75,6 @@ class IOSMnemonicProvider : MnemonicProvider {
         keyType: KeyType,
         derivationPath: String
     ): Keypair {
-        // Derivation paths (e.g., //hard/soft) are not yet supported on iOS
-        require(derivationPath.isEmpty()) {
-            "Derivation paths are not yet supported on iOS. This will be addressed in a future PR."
-        }
-
         // Get the full 64-byte BIP39 seed
         val fullSeed = toSeed(mnemonic, passphrase)
         // NovaCrypto expects the first 32 bytes (mini-secret) for keypair generation
@@ -87,17 +82,13 @@ class IOSMnemonicProvider : MnemonicProvider {
         val seedData = miniSecret.toNSData()
 
         return when (keyType) {
-            KeyType.SR25519 -> {
-                val keypair = sr25519KeyFactory.createKeypairFromSeed(seedData, null)
-                    ?: throw IllegalStateException("Failed to create SR25519 keypair")
-
-                Keypair(
-                    publicKey = keypair.publicKey().rawData().toByteArray(),
-                    privateKey = keypair.privateKey().rawData().toByteArray(),
-                    keyType = KeyType.SR25519
-                )
-            }
+            KeyType.SR25519 -> createSr25519Keypair(seedData, derivationPath)
             KeyType.ED25519 -> {
+                // ED25519 derivation is not supported
+                require(derivationPath.isEmpty()) {
+                    "Derivation paths are not supported for ED25519 keys on iOS"
+                }
+
                 val keypair = ed25519KeyFactory.deriveFromSeed(seedData, null)
                     ?: throw IllegalStateException("Failed to create ED25519 keypair")
 
@@ -108,6 +99,57 @@ class IOSMnemonicProvider : MnemonicProvider {
                 )
             }
         }
+    }
+
+    /**
+     * Create an SR25519 keypair with optional derivation path.
+     *
+     * @param seedData The 32-byte mini-secret as NSData
+     * @param derivationPath Substrate derivation path (e.g., "//Alice", "//hard/soft")
+     * @return The derived keypair
+     */
+    private fun createSr25519Keypair(seedData: platform.Foundation.NSData, derivationPath: String): Keypair {
+        // Create base keypair from seed
+        var currentKeypair = sr25519KeyFactory.createKeypairFromSeed(seedData, null)
+            ?: throw IllegalStateException("Failed to create SR25519 keypair from seed")
+
+        // If no derivation path, return base keypair
+        if (derivationPath.isEmpty()) {
+            return Keypair(
+                publicKey = currentKeypair.publicKey().rawData().toByteArray(),
+                privateKey = currentKeypair.privateKey().rawData().toByteArray(),
+                keyType = KeyType.SR25519
+            )
+        }
+
+        // Parse derivation path into junctions
+        val junctions = JunctionDecoder().decode(derivationPath)
+
+        // Apply each junction iteratively
+        for (junction in junctions) {
+            val chaincodeData = junction.chaincode.toNSData()
+
+            currentKeypair = when (junction.type) {
+                JunctionType.HARD -> {
+                    sr25519KeyFactory.createKeypairHard(currentKeypair, chaincodeData, null)
+                        ?: throw IllegalStateException(
+                            "Failed to apply hard derivation for junction in path: $derivationPath"
+                        )
+                }
+                JunctionType.SOFT -> {
+                    sr25519KeyFactory.createKeypairSoft(currentKeypair, chaincodeData, null)
+                        ?: throw IllegalStateException(
+                            "Failed to apply soft derivation for junction in path: $derivationPath"
+                        )
+                }
+            }
+        }
+
+        return Keypair(
+            publicKey = currentKeypair.publicKey().rawData().toByteArray(),
+            privateKey = currentKeypair.privateKey().rawData().toByteArray(),
+            keyType = KeyType.SR25519
+        )
     }
 }
 
