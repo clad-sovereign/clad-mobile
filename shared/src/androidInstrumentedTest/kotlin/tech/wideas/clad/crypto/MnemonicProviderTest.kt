@@ -97,9 +97,8 @@ class MnemonicProviderTest {
     @Test
     fun `toKeypair generates sr25519 keypair`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val keypair = provider.toKeypair(mnemonic)
 
-        assertEquals(KeyType.SR25519, keypair.keyType)
         assertEquals(32, keypair.publicKey.size, "Public key should be 32 bytes")
         assertTrue(keypair.privateKey.isNotEmpty(), "Private key should not be empty")
     }
@@ -107,8 +106,8 @@ class MnemonicProviderTest {
     @Test
     fun `toKeypair is deterministic for same mnemonic`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair1 = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
-        val keypair2 = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val keypair1 = provider.toKeypair(mnemonic)
+        val keypair2 = provider.toKeypair(mnemonic)
 
         assertTrue(
             keypair1.publicKey.contentEquals(keypair2.publicKey),
@@ -120,8 +119,8 @@ class MnemonicProviderTest {
     fun `different mnemonics produce different keypairs`() {
         val mnemonic1 = provider.generate(MnemonicWordCount.WORDS_12)
         val mnemonic2 = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair1 = provider.toKeypair(mnemonic1, keyType = KeyType.SR25519)
-        val keypair2 = provider.toKeypair(mnemonic2, keyType = KeyType.SR25519)
+        val keypair1 = provider.toKeypair(mnemonic1)
+        val keypair2 = provider.toKeypair(mnemonic2)
 
         assertTrue(
             !keypair1.publicKey.contentEquals(keypair2.publicKey),
@@ -136,10 +135,9 @@ class MnemonicProviderTest {
     @Test
     fun `toKeypair with hard derivation path produces different keypair`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val masterKeypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val masterKeypair = provider.toKeypair(mnemonic)
         val derivedKeypair = provider.toKeypair(
             mnemonic,
-            keyType = KeyType.SR25519,
             derivationPath = "//polkadot"
         )
 
@@ -152,10 +150,9 @@ class MnemonicProviderTest {
     @Test
     fun `toKeypair with soft derivation path produces different keypair`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val masterKeypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val masterKeypair = provider.toKeypair(mnemonic)
         val derivedKeypair = provider.toKeypair(
             mnemonic,
-            keyType = KeyType.SR25519,
             derivationPath = "/soft"
         )
 
@@ -168,10 +165,9 @@ class MnemonicProviderTest {
     @Test
     fun `toKeypair with mixed derivation path produces different keypair`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val masterKeypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val masterKeypair = provider.toKeypair(mnemonic)
         val derivedKeypair = provider.toKeypair(
             mnemonic,
-            keyType = KeyType.SR25519,
             derivationPath = "//hard/soft"
         )
 
@@ -186,12 +182,10 @@ class MnemonicProviderTest {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
         val derivedKeypair1 = provider.toKeypair(
             mnemonic,
-            keyType = KeyType.SR25519,
             derivationPath = "//polkadot//staking"
         )
         val derivedKeypair2 = provider.toKeypair(
             mnemonic,
-            keyType = KeyType.SR25519,
             derivationPath = "//polkadot//staking"
         )
 
@@ -206,12 +200,10 @@ class MnemonicProviderTest {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
         val keypair1 = provider.toKeypair(
             mnemonic,
-            keyType = KeyType.SR25519,
             derivationPath = "//polkadot"
         )
         val keypair2 = provider.toKeypair(
             mnemonic,
-            keyType = KeyType.SR25519,
             derivationPath = "//kusama"
         )
 
@@ -249,7 +241,6 @@ class MnemonicProviderTest {
         val keypair = provider.toKeypair(
             mnemonic = devMnemonic,
             passphrase = "",
-            keyType = KeyType.SR25519,
             derivationPath = derivationPath
         )
 
@@ -290,7 +281,6 @@ class MnemonicProviderTest {
         val keypair = provider.toKeypair(
             mnemonic = devMnemonic,
             passphrase = "",
-            keyType = KeyType.SR25519,
             derivationPath = derivationPath
         )
 
@@ -351,8 +341,7 @@ class MnemonicProviderTest {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
         val keypair = provider.toKeypair(
             mnemonic,
-            passphrase = "日本語パスフレーズ",
-            keyType = KeyType.SR25519
+            passphrase = "日本語パスフレーズ"
         )
 
         assertEquals(32, keypair.publicKey.size, "Public key should be 32 bytes")
@@ -362,8 +351,8 @@ class MnemonicProviderTest {
     @Test
     fun `toKeypair passphrase is case sensitive`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypairLower = provider.toKeypair(mnemonic, passphrase = "password", keyType = KeyType.SR25519)
-        val keypairUpper = provider.toKeypair(mnemonic, passphrase = "PASSWORD", keyType = KeyType.SR25519)
+        val keypairLower = provider.toKeypair(mnemonic, passphrase = "password")
+        val keypairUpper = provider.toKeypair(mnemonic, passphrase = "PASSWORD")
 
         assertTrue(
             !keypairLower.publicKey.contentEquals(keypairUpper.publicKey),
@@ -400,7 +389,6 @@ class MnemonicProviderTest {
         val keypair = provider.toKeypair(
             mnemonic = testMnemonic,
             passphrase = "",
-            keyType = KeyType.SR25519,
             derivationPath = ""
         )
 
@@ -443,7 +431,6 @@ class MnemonicProviderTest {
         val keypair = provider.toKeypair(
             mnemonic = testMnemonic,
             passphrase = "",
-            keyType = KeyType.SR25519,
             derivationPath = ""
         )
 

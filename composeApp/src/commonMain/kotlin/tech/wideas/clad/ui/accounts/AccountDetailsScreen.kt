@@ -210,22 +210,11 @@ private fun AccountHeader(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            text = account.keyType.name,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    },
-                    enabled = false
-                )
-
-                if (isActive) {
+            if (isActive) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     AssistChip(
                         onClick = { },
                         label = {
@@ -349,11 +338,6 @@ private fun AccountInfoSection(account: AccountInfo) {
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                InfoRow(
-                    label = "Key Type",
-                    value = account.keyType.name
-                )
-
                 InfoRow(
                     label = "Created",
                     value = formatTimestamp(account.createdAt)

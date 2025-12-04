@@ -235,10 +235,6 @@ struct AccountCard: View {
                                     .cornerRadius(4)
                             }
                         }
-
-                        Text(account.keyType == .sr25519 ? "SR25519" : "ED25519")
-                            .font(CladTypography.caption)
-                            .foregroundColor(colors.onSurfaceVariant)
                     }
 
                     Spacer()

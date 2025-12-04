@@ -13,7 +13,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import tech.wideas.clad.crypto.KeyType
 
 /**
  * Screen to confirm import and set account label.
@@ -23,9 +22,7 @@ fun ConfirmImportScreen(
     address: String,
     isWatchOnly: Boolean,
     label: String,
-    keyType: KeyType,
     onLabelChanged: (String) -> Unit,
-    onKeyTypeChanged: (KeyType) -> Unit,
     onConfirm: () -> Unit,
     canConfirm: Boolean,
     error: String?
@@ -84,24 +81,6 @@ fun ConfirmImportScreen(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-
-                if (!isWatchOnly) {
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        text = "Key Type",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = keyType.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
             }
         }
 
@@ -125,51 +104,6 @@ fun ConfirmImportScreen(
                 }
             )
         )
-
-        // Key type selector (only for seed phrase imports)
-        if (!isWatchOnly) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Key Type",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                FilterChip(
-                    selected = keyType == KeyType.SR25519,
-                    onClick = { onKeyTypeChanged(KeyType.SR25519) },
-                    label = { Text("SR25519") },
-                    modifier = Modifier.weight(1f)
-                )
-
-                FilterChip(
-                    selected = keyType == KeyType.ED25519,
-                    onClick = { onKeyTypeChanged(KeyType.ED25519) },
-                    label = { Text("ED25519") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = if (keyType == KeyType.SR25519) {
-                    "SR25519 is recommended for Substrate chains (supports derivation)"
-                } else {
-                    "ED25519 is widely compatible but doesn't support soft derivation"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
 
         // Error message
         if (error != null) {

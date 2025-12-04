@@ -53,7 +53,6 @@ struct ImportData {
     var address: String = ""
     var label: String = ""
     var isWatchOnly: Bool = false
-    var keyType: KeyType = .sr25519
 }
 
 /// ViewModel for account import flows using the modern @Observable macro (iOS 17+)
@@ -195,7 +194,6 @@ final class AccountImportViewModel {
                 let keypair = mnemonicProvider.toKeypair(
                     mnemonic: phrase,
                     passphrase: "",
-                    keyType: importData.keyType,
                     derivationPath: ""
                 )
 
@@ -297,15 +295,13 @@ final class AccountImportViewModel {
                 let keypair = mnemonicProvider.toKeypair(
                     mnemonic: importData.mnemonic,
                     passphrase: "",
-                    keyType: importData.keyType,
                     derivationPath: ""
                 )
 
                 // Create account first to get the ID
                 let account = try await accountRepository.create(
                     label: finalLabel,
-                    address: importData.address,
-                    keyType: importData.keyType
+                    address: importData.address
                 )
 
                 // Save keypair with biometric protection
@@ -343,8 +339,7 @@ final class AccountImportViewModel {
                 // Watch-only account - just save metadata
                 _ = try await accountRepository.create(
                     label: finalLabel,
-                    address: importData.address,
-                    keyType: .sr25519 // Default for watch-only
+                    address: importData.address
                 )
 
                 flowState = .success

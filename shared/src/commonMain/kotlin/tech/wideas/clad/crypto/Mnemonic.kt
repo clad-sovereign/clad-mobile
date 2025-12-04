@@ -69,11 +69,10 @@ interface MnemonicProvider {
     fun toSeed(mnemonic: String, passphrase: String = ""): ByteArray
 
     /**
-     * Derive a keypair from a mnemonic phrase.
+     * Derive an SR25519 keypair from a mnemonic phrase.
      *
      * @param mnemonic Space-separated mnemonic words.
      * @param passphrase Optional passphrase for additional security.
-     * @param keyType The key type to generate. Defaults to [KeyType.SR25519].
      * @param derivationPath Optional Substrate derivation path (e.g., "//hard/soft").
      *   Use "//" for hard derivation and "/" for soft derivation.
      *   Empty string means no derivation (master key).
@@ -82,7 +81,6 @@ interface MnemonicProvider {
     fun toKeypair(
         mnemonic: String,
         passphrase: String = "",
-        keyType: KeyType = KeyType.SR25519,
         derivationPath: String = ""
     ): Keypair
 }

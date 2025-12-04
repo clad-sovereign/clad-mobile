@@ -23,7 +23,7 @@ class Ss58IOSTest {
     @Test
     fun `encode produces valid SS58 address`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val keypair = provider.toKeypair(mnemonic)
 
         val address = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
 
@@ -55,7 +55,7 @@ class Ss58IOSTest {
     @Test
     fun `decode extracts correct public key and prefix`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val keypair = provider.toKeypair(mnemonic)
 
         val address = Ss58.encode(keypair.publicKey, NetworkPrefix.GENERIC_SUBSTRATE)
         val (decodedPublicKey, decodedPrefix) = Ss58.decode(address)
@@ -70,7 +70,7 @@ class Ss58IOSTest {
     @Test
     fun `encode and decode roundtrip works`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val keypair = provider.toKeypair(mnemonic)
 
         val address = Ss58.encode(keypair.publicKey, NetworkPrefix.GENERIC_SUBSTRATE)
         val (decodedPublicKey, _) = Ss58.decode(address)
@@ -86,7 +86,7 @@ class Ss58IOSTest {
     @Test
     fun `isValid returns true for valid address`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val keypair = provider.toKeypair(mnemonic)
         val address = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
 
         assertTrue(Ss58.isValid(address), "Encoded address should be valid")
@@ -106,7 +106,7 @@ class Ss58IOSTest {
     @Test
     fun `keypair toSs58Address convenience method works`() {
         val mnemonic = provider.generate(MnemonicWordCount.WORDS_12)
-        val keypair = provider.toKeypair(mnemonic, keyType = KeyType.SR25519)
+        val keypair = provider.toKeypair(mnemonic)
 
         val address = keypair.toSs58Address()
         val directAddress = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)

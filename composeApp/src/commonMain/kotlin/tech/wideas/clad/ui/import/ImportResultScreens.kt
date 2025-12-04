@@ -64,14 +64,6 @@ fun ImportSuccessScreen(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Key type badge
-                AssistChip(
-                    onClick = { },
-                    label = { Text(account.keyType.name) },
-                    enabled = false
-                )
             }
         }
 

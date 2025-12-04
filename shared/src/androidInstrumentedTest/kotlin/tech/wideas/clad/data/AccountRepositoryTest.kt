@@ -9,7 +9,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import tech.wideas.clad.crypto.KeyType
 import tech.wideas.clad.database.CladDatabase
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -20,6 +19,7 @@ import kotlin.test.assertTrue
  * Instrumented tests for AccountRepository.
  *
  * Uses an in-memory SQLite database for fast, isolated tests.
+ * All accounts use SR25519 keys (see issue #60 for rationale).
  */
 @RunWith(AndroidJUnit4::class)
 class AccountRepositoryTest {
@@ -50,14 +50,12 @@ class AccountRepositoryTest {
     fun create_insertsAccountAndReturnsIt() = runTest {
         val account = repository.create(
             label = "Test Account",
-            address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            keyType = KeyType.SR25519
+            address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
         )
 
         assertNotNull(account.id)
         assertEquals("Test Account", account.label)
         assertEquals("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", account.address)
-        assertEquals(KeyType.SR25519, account.keyType)
         assertTrue(account.createdAt > 0)
         assertNull(account.lastUsedAt)
     }
@@ -66,8 +64,7 @@ class AccountRepositoryTest {
     fun getById_returnsAccount() = runTest {
         val created = repository.create(
             label = "Test",
-            address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            keyType = KeyType.ED25519
+            address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
         )
 
         val retrieved = repository.getById(created.id)
@@ -76,7 +73,6 @@ class AccountRepositoryTest {
         assertEquals(created.id, retrieved.id)
         assertEquals(created.label, retrieved.label)
         assertEquals(created.address, retrieved.address)
-        assertEquals(created.keyType, retrieved.keyType)
     }
 
     @Test
@@ -90,8 +86,7 @@ class AccountRepositoryTest {
         val address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
         val created = repository.create(
             label = "Test",
-            address = address,
-            keyType = KeyType.SR25519
+            address = address
         )
 
         val retrieved = repository.getByAddress(address)
@@ -108,9 +103,9 @@ class AccountRepositoryTest {
 
     @Test
     fun getAll_returnsAllAccountsOrderedByCreatedAtDesc() = runTest {
-        repository.create("First", "5Address1", KeyType.SR25519)
-        repository.create("Second", "5Address2", KeyType.ED25519)
-        repository.create("Third", "5Address3", KeyType.SR25519)
+        repository.create("First", "5Address1")
+        repository.create("Second", "5Address2")
+        repository.create("Third", "5Address3")
 
         val accounts = repository.getAll()
 
@@ -123,7 +118,7 @@ class AccountRepositoryTest {
 
     @Test
     fun updateLabel_changesAccountLabel() = runTest {
-        val account = repository.create("Original", "5Address", KeyType.SR25519)
+        val account = repository.create("Original", "5Address")
 
         repository.updateLabel(account.id, "Updated")
 
@@ -134,7 +129,7 @@ class AccountRepositoryTest {
 
     @Test
     fun markAsUsed_updatesLastUsedAt() = runTest {
-        val account = repository.create("Test", "5Address", KeyType.SR25519)
+        val account = repository.create("Test", "5Address")
         assertNull(account.lastUsedAt)
 
         repository.markAsUsed(account.id)
@@ -147,7 +142,7 @@ class AccountRepositoryTest {
 
     @Test
     fun delete_removesAccount() = runTest {
-        val account = repository.create("Test", "5Address", KeyType.SR25519)
+        val account = repository.create("Test", "5Address")
 
         repository.delete(account.id)
 
@@ -159,10 +154,10 @@ class AccountRepositoryTest {
     fun count_returnsTotalAccounts() = runTest {
         assertEquals(0, repository.count())
 
-        repository.create("First", "5Address1", KeyType.SR25519)
+        repository.create("First", "5Address1")
         assertEquals(1, repository.count())
 
-        repository.create("Second", "5Address2", KeyType.ED25519)
+        repository.create("Second", "5Address2")
         assertEquals(2, repository.count())
     }
 
@@ -173,13 +168,13 @@ class AccountRepositoryTest {
             assertEquals(emptyList(), awaitItem())
 
             // Add first account
-            val first = repository.create("First", "5Address1", KeyType.SR25519)
+            val first = repository.create("First", "5Address1")
             val afterFirst = awaitItem()
             assertEquals(1, afterFirst.size)
             assertEquals("First", afterFirst[0].label)
 
             // Add second account
-            repository.create("Second", "5Address2", KeyType.ED25519)
+            repository.create("Second", "5Address2")
             val afterSecond = awaitItem()
             assertEquals(2, afterSecond.size)
             assertEquals("Second", afterSecond[0].label) // Most recent first
@@ -196,7 +191,7 @@ class AccountRepositoryTest {
 
     @Test
     fun observeById_emitsUpdatesForSpecificAccount() = runTest {
-        val account = repository.create("Original", "5Address", KeyType.SR25519)
+        val account = repository.create("Original", "5Address")
 
         repository.observeById(account.id).test {
             // Initial value
@@ -219,36 +214,6 @@ class AccountRepositoryTest {
         }
     }
 
-    @Test
-    fun create_supportsED25519KeyType() = runTest {
-        val account = repository.create(
-            label = "ED25519 Account",
-            address = "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty",
-            keyType = KeyType.ED25519
-        )
-
-        assertEquals(KeyType.ED25519, account.keyType)
-
-        val retrieved = repository.getById(account.id)
-        assertNotNull(retrieved)
-        assertEquals(KeyType.ED25519, retrieved.keyType)
-    }
-
-    @Test
-    fun create_supportsSR25519KeyType() = runTest {
-        val account = repository.create(
-            label = "SR25519 Account",
-            address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            keyType = KeyType.SR25519
-        )
-
-        assertEquals(KeyType.SR25519, account.keyType)
-
-        val retrieved = repository.getById(account.id)
-        assertNotNull(retrieved)
-        assertEquals(KeyType.SR25519, retrieved.keyType)
-    }
-
     // ==================== Active Account Tests ====================
 
     @Test
@@ -259,7 +224,7 @@ class AccountRepositoryTest {
 
     @Test
     fun setActiveAccount_setsAndGetsActiveAccountId() = runTest {
-        val account = repository.create("Test", "5Address", KeyType.SR25519)
+        val account = repository.create("Test", "5Address")
 
         repository.setActiveAccount(account.id)
 
@@ -269,7 +234,7 @@ class AccountRepositoryTest {
 
     @Test
     fun setActiveAccount_clearsWhenSetToNull() = runTest {
-        val account = repository.create("Test", "5Address", KeyType.SR25519)
+        val account = repository.create("Test", "5Address")
         repository.setActiveAccount(account.id)
 
         repository.setActiveAccount(null)
@@ -280,7 +245,7 @@ class AccountRepositoryTest {
 
     @Test
     fun getActiveAccount_returnsAccountWhenSet() = runTest {
-        val account = repository.create("Test Account", "5Address", KeyType.SR25519)
+        val account = repository.create("Test Account", "5Address")
         repository.setActiveAccount(account.id)
 
         val activeAccount = repository.getActiveAccount()
@@ -292,7 +257,7 @@ class AccountRepositoryTest {
 
     @Test
     fun getActiveAccount_returnsNullWhenActiveAccountDeleted() = runTest {
-        val account = repository.create("Test", "5Address", KeyType.SR25519)
+        val account = repository.create("Test", "5Address")
         repository.setActiveAccount(account.id)
         repository.delete(account.id)
 
@@ -303,8 +268,8 @@ class AccountRepositoryTest {
 
     @Test
     fun observeActiveAccountId_emitsUpdatesOnChanges() = runTest {
-        val account1 = repository.create("First", "5Address1", KeyType.SR25519)
-        val account2 = repository.create("Second", "5Address2", KeyType.ED25519)
+        val account1 = repository.create("First", "5Address1")
+        val account2 = repository.create("Second", "5Address2")
 
         repository.observeActiveAccountId().test {
             // Initial null
@@ -328,7 +293,7 @@ class AccountRepositoryTest {
 
     @Test
     fun observeActiveAccount_emitsFullAccountInfo() = runTest {
-        val account = repository.create("Test Account", "5Address", KeyType.SR25519)
+        val account = repository.create("Test Account", "5Address")
 
         repository.observeActiveAccount().test {
             // Initial null

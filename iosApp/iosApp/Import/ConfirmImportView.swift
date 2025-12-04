@@ -71,23 +71,6 @@ struct ConfirmImportView: View {
                     .background(colors.surface)
                     .cornerRadius(12)
 
-                    // Key type (only for full access accounts)
-                    if !viewModel.importData.isWatchOnly {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Key Type")
-                                .font(CladTypography.labelLarge)
-                                .foregroundColor(colors.onSurfaceVariant)
-
-                            Text(viewModel.importData.keyType == .sr25519 ? "SR25519 (Schnorrkel)" : "ED25519")
-                                .font(CladTypography.bodyMedium)
-                                .foregroundColor(colors.onSurface)
-                        }
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(colors.surface)
-                        .cornerRadius(12)
-                    }
-
                     // Account label input
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Account Label (Optional)")

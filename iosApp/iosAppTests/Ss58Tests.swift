@@ -26,7 +26,6 @@ final class Ss58Tests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
@@ -46,7 +45,6 @@ final class Ss58Tests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
@@ -69,7 +67,6 @@ final class Ss58Tests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
@@ -93,7 +90,6 @@ final class Ss58Tests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
         let address = Ss58.shared.encode(
@@ -117,7 +113,6 @@ final class Ss58Tests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 

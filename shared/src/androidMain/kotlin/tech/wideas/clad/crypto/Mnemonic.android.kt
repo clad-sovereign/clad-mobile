@@ -10,7 +10,7 @@ import io.novasama.substrate_sdk_android.encrypt.seed.substrate.SubstrateSeedFac
  * Android implementation of [MnemonicProvider] using Nova Substrate SDK.
  *
  * This implementation uses the `substrate-sdk-android` library which provides
- * native Rust-based cryptographic operations via JNI for sr25519 (Schnorrkel).
+ * native Rust-based cryptographic operations via JNI for SR25519 (Schnorrkel).
  *
  * Thread Safety: This class is NOT thread-safe. The underlying Nova SDK
  * operations may not be safe for concurrent use. Create separate instances
@@ -48,14 +48,9 @@ class AndroidMnemonicProvider : MnemonicProvider {
     override fun toKeypair(
         mnemonic: String,
         passphrase: String,
-        keyType: KeyType,
         derivationPath: String
     ): Keypair {
         val result = seedFactory.deriveSeed(mnemonic, passphrase.ifEmpty { null })
-        val encryptionType = when (keyType) {
-            KeyType.SR25519 -> EncryptionType.SR25519
-            KeyType.ED25519 -> EncryptionType.ED25519
-        }
 
         // Nova SDK's SubstrateKeypairFactory.generate() expects a 32-byte mini-secret for sr25519,
         // not the full 64-byte BIP39 seed. Extract the first 32 bytes (mini-secret) from the
@@ -66,13 +61,13 @@ class AndroidMnemonicProvider : MnemonicProvider {
         // Nova SDK requires derivation path to be empty list (not empty string) when no derivation
         val novaKeypair = if (derivationPath.isEmpty()) {
             SubstrateKeypairFactory.generate(
-                encryptionType = encryptionType,
+                encryptionType = EncryptionType.SR25519,
                 seed = miniSecret,
                 junctions = emptyList()
             )
         } else {
             SubstrateKeypairFactory.generate(
-                encryptionType = encryptionType,
+                encryptionType = EncryptionType.SR25519,
                 seed = miniSecret,
                 derivationPath = derivationPath
             )
@@ -80,8 +75,7 @@ class AndroidMnemonicProvider : MnemonicProvider {
 
         return Keypair(
             publicKey = novaKeypair.publicKey,
-            privateKey = novaKeypair.privateKey,
-            keyType = keyType
+            privateKey = novaKeypair.privateKey
         )
     }
 }

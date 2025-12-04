@@ -4,7 +4,9 @@ import Shared
 /// Tests for MnemonicProvider iOS implementation.
 ///
 /// These tests verify the iOS crypto implementation using NovaCrypto library
-/// for BIP39 mnemonic generation and key derivation.
+/// for BIP39 mnemonic generation and SR25519 key derivation.
+///
+/// Note: ED25519 tests removed in issue #60 (SR25519-only simplification).
 final class MnemonicProviderTests: XCTestCase {
 
     private var provider: MnemonicProvider!
@@ -106,11 +108,9 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
-        XCTAssertEqual(keypair.keyType, .sr25519)
         XCTAssertEqual(Int(keypair.publicKey.size), 32, "Public key should be 32 bytes")
         XCTAssertGreaterThan(Int(keypair.privateKey.size), 0, "Private key should not be empty")
     }
@@ -120,13 +120,11 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair1 = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
         let keypair2 = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
@@ -139,13 +137,11 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair1 = provider.toKeypair(
             mnemonic: mnemonic1,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
         let keypair2 = provider.toKeypair(
             mnemonic: mnemonic2,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
@@ -171,7 +167,6 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: testMnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
@@ -211,7 +206,6 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: testMnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
@@ -259,7 +253,6 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: devMnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: derivationPath
         )
 
@@ -301,7 +294,6 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: devMnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: derivationPath
         )
 
@@ -329,11 +321,9 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: "//Alice"
         )
 
-        XCTAssertEqual(keypair.keyType, .sr25519)
         XCTAssertEqual(Int(keypair.publicKey.size), 32, "Public key should be 32 bytes")
         XCTAssertGreaterThan(Int(keypair.privateKey.size), 0, "Private key should not be empty")
     }
@@ -343,11 +333,9 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: "/soft"
         )
 
-        XCTAssertEqual(keypair.keyType, .sr25519)
         XCTAssertEqual(Int(keypair.publicKey.size), 32, "Public key should be 32 bytes")
     }
 
@@ -356,11 +344,9 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: "//hard/soft"
         )
 
-        XCTAssertEqual(keypair.keyType, .sr25519)
         XCTAssertEqual(Int(keypair.publicKey.size), 32, "Public key should be 32 bytes")
     }
 
@@ -369,13 +355,11 @@ final class MnemonicProviderTests: XCTestCase {
         let keypairNoPath = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: ""
         )
         let keypairWithPath = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: "//Alice"
         )
 
@@ -390,13 +374,11 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair1 = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: "//Alice"
         )
         let keypair2 = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "",
-            keyType: .sr25519,
             derivationPath: "//Alice"
         )
 
@@ -413,7 +395,6 @@ final class MnemonicProviderTests: XCTestCase {
         let keypair = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "test-passphrase",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
@@ -426,13 +407,11 @@ final class MnemonicProviderTests: XCTestCase {
         let keypairLower = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "password",
-            keyType: .sr25519,
             derivationPath: ""
         )
         let keypairUpper = provider.toKeypair(
             mnemonic: mnemonic,
             passphrase: "PASSWORD",
-            keyType: .sr25519,
             derivationPath: ""
         )
 
