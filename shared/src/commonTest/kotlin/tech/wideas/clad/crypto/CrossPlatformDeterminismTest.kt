@@ -35,9 +35,20 @@ class CrossPlatformDeterminismTest {
     /**
      * Test Vector: Alice's well-known public key and SS58 address.
      * Used to verify SS58 encoding/decoding without native crypto.
+     *
+     * Source: `subkey inspect "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice"`
+     *
+     * This is Substrate's well-known dev account for Alice, derived from the dev mnemonic
+     * with the `//Alice` hard derivation path.
      */
     object AliceTestVector {
+        /** Dev mnemonic used by Substrate for all well-known dev accounts */
+        const val DEV_MNEMONIC = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"
+        /** Hard derivation path for Alice */
+        const val DERIVATION_PATH = "//Alice"
+        /** Expected SR25519 public key (hex) after derivation */
         const val PUBLIC_KEY_HEX = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+        /** Expected SS58 address (generic substrate prefix 42) */
         const val SS58_ADDRESS = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
     }
 
