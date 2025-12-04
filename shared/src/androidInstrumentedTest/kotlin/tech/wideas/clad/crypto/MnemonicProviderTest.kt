@@ -232,6 +232,93 @@ class MnemonicProviderTest {
     }
 
     // ============================================================================
+    // Alice Derivation Test (Cross-Platform Determinism)
+    // ============================================================================
+
+    /**
+     * CRITICAL TEST: Verifies Android produces the correct Alice address from derivation.
+     *
+     * This test uses Substrate's well-known dev mnemonic + `//Alice` derivation path
+     * to verify cross-platform determinism for derived keys.
+     *
+     * Source: `subkey inspect "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice"`
+     *
+     * NOTE: Values duplicated from CrossPlatformDeterminismTest.AliceTestVector (shared/commonTest).
+     * Duplication required because androidInstrumentedTest cannot access commonTest sources.
+     * See also: iosApp/iosAppTests/MnemonicProviderTests.swift (iOS equivalent)
+     *
+     * If this test fails, derived keys on Android will NOT match iOS/web wallets!
+     */
+    @Test
+    fun `Alice derivation produces expected SR25519 public key`() {
+        // Values from CrossPlatformDeterminismTest.AliceTestVector
+        val devMnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"
+        val derivationPath = "//Alice"
+        val expectedPublicKeyHex = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+
+        val keypair = provider.toKeypair(
+            mnemonic = devMnemonic,
+            passphrase = "",
+            keyType = KeyType.SR25519,
+            derivationPath = derivationPath
+        )
+
+        val actualPublicKeyHex = keypair.publicKey.toHexString()
+
+        assertEquals(
+            expectedPublicKeyHex,
+            actualPublicKeyHex,
+            """
+            ALICE DERIVATION DETERMINISM FAILURE!
+
+            The SR25519 public key derived from dev mnemonic + //Alice does not match
+            the expected value from Substrate subkey.
+
+            Mnemonic: "$devMnemonic"
+            Derivation: $derivationPath
+            Expected: $expectedPublicKeyHex
+            Actual:   $actualPublicKeyHex
+
+            This means Android derived keys will NOT match iOS/web wallets!
+            """.trimIndent()
+        )
+    }
+
+    /**
+     * Verifies Android produces the correct Alice SS58 address from derivation.
+     *
+     * NOTE: Values duplicated from CrossPlatformDeterminismTest.AliceTestVector (shared/commonTest).
+     * See also: iosApp/iosAppTests/MnemonicProviderTests.swift (iOS equivalent)
+     */
+    @Test
+    fun `Alice derivation produces expected SS58 address`() {
+        // Values from CrossPlatformDeterminismTest.AliceTestVector
+        val devMnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"
+        val derivationPath = "//Alice"
+        val expectedAddress = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+
+        val keypair = provider.toKeypair(
+            mnemonic = devMnemonic,
+            passphrase = "",
+            keyType = KeyType.SR25519,
+            derivationPath = derivationPath
+        )
+
+        val actualAddress = Ss58.encode(keypair.publicKey, networkPrefix = NetworkPrefix.GENERIC_SUBSTRATE)
+
+        assertEquals(
+            expectedAddress,
+            actualAddress,
+            """
+            ALICE SS58 ADDRESS MISMATCH!
+
+            Expected: $expectedAddress
+            Actual:   $actualAddress
+            """.trimIndent()
+        )
+    }
+
+    // ============================================================================
     // Passphrase Edge Case Tests
     // ============================================================================
 

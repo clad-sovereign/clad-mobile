@@ -321,6 +321,98 @@ final class MnemonicProviderTests: XCTestCase {
         )
     }
 
+    // MARK: - Alice Derivation Test (Cross-Platform Determinism)
+
+    /// CRITICAL TEST: Verifies iOS produces the correct Alice address from derivation.
+    ///
+    /// This test uses Substrate's well-known dev mnemonic + `//Alice` derivation path
+    /// to verify cross-platform determinism for derived keys.
+    ///
+    /// Source: `subkey inspect "bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice"`
+    ///
+    /// NOTE: Values duplicated from CrossPlatformDeterminismTest.AliceTestVector (shared/commonTest).
+    /// Duplication required because Swift cannot import Kotlin test sources.
+    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt (Android equivalent)
+    ///
+    /// If this test fails, derived keys on iOS will NOT match Android/web wallets!
+    ///
+    /// TODO: Re-enable once iOS SR25519 derivation matches Substrate algorithm.
+    /// Tracked in: https://github.com/clad-sovereign/clad-mobile/issues/63
+    func testAliceDerivationProducesExpectedSr25519PublicKey() throws {
+        throw XCTSkip("iOS SR25519 derivation does not match Substrate algorithm yet. See issue #63.")
+
+        // Values from CrossPlatformDeterminismTest.AliceTestVector
+        let devMnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"
+        let derivationPath = "//Alice"
+        let expectedPublicKeyHex = "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d"
+
+        let keypair = provider.toKeypair(
+            mnemonic: devMnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: derivationPath
+        )
+
+        let actualPublicKeyHex = kotlinByteArrayToHex(keypair.publicKey)
+
+        XCTAssertEqual(
+            actualPublicKeyHex,
+            expectedPublicKeyHex,
+            """
+            ALICE DERIVATION DETERMINISM FAILURE!
+
+            The SR25519 public key derived from dev mnemonic + //Alice does not match
+            the expected value from Substrate subkey.
+
+            Mnemonic: "\(devMnemonic)"
+            Derivation: \(derivationPath)
+            Expected: \(expectedPublicKeyHex)
+            Actual:   \(actualPublicKeyHex)
+
+            This means iOS derived keys will NOT match Android/web wallets!
+            """
+        )
+    }
+
+    /// Verifies iOS produces the correct Alice SS58 address from derivation.
+    ///
+    /// NOTE: Values duplicated from CrossPlatformDeterminismTest.AliceTestVector (shared/commonTest).
+    /// See also: shared/src/androidInstrumentedTest/.../MnemonicProviderTest.kt (Android equivalent)
+    ///
+    /// TODO: Re-enable once iOS SR25519 derivation matches Substrate algorithm.
+    /// Tracked in: https://github.com/clad-sovereign/clad-mobile/issues/63
+    func testAliceDerivationProducesExpectedSs58Address() throws {
+        throw XCTSkip("iOS SR25519 derivation does not match Substrate algorithm yet. See issue #63.")
+
+        // Values from CrossPlatformDeterminismTest.AliceTestVector
+        let devMnemonic = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"
+        let derivationPath = "//Alice"
+        let expectedAddress = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+
+        let keypair = provider.toKeypair(
+            mnemonic: devMnemonic,
+            passphrase: "",
+            keyType: .sr25519,
+            derivationPath: derivationPath
+        )
+
+        let actualAddress = Ss58.shared.encode(
+            publicKey: keypair.publicKey,
+            networkPrefix: NetworkPrefix.shared.GENERIC_SUBSTRATE
+        )
+
+        XCTAssertEqual(
+            actualAddress,
+            expectedAddress,
+            """
+            ALICE SS58 ADDRESS MISMATCH!
+
+            Expected: \(expectedAddress)
+            Actual:   \(actualAddress)
+            """
+        )
+    }
+
     // MARK: - SR25519 Derivation Path Tests
 
     func testSr25519DerivationWithHardJunction() {
