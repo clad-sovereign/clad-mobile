@@ -29,6 +29,7 @@ class IOSMnemonicProvider : MnemonicProvider {
     private val seedCreator = SNBIP39SeedCreator()
     private val sr25519KeyFactory = SNKeyFactory()
     private val ed25519KeyFactory = EDKeyFactory()
+    private val junctionDecoder = JunctionDecoder()
 
     override fun generate(wordCount: MnemonicWordCount): String {
         val strength = when (wordCount) {
@@ -75,11 +76,6 @@ class IOSMnemonicProvider : MnemonicProvider {
         keyType: KeyType,
         derivationPath: String
     ): Keypair {
-        // Derivation paths (e.g., //hard/soft) are not yet supported on iOS
-        require(derivationPath.isEmpty()) {
-            "Derivation paths are not yet supported on iOS. This will be addressed in a future PR."
-        }
-
         // Get the full 64-byte BIP39 seed
         val fullSeed = toSeed(mnemonic, passphrase)
         // NovaCrypto expects the first 32 bytes (mini-secret) for keypair generation
@@ -87,17 +83,13 @@ class IOSMnemonicProvider : MnemonicProvider {
         val seedData = miniSecret.toNSData()
 
         return when (keyType) {
-            KeyType.SR25519 -> {
-                val keypair = sr25519KeyFactory.createKeypairFromSeed(seedData, null)
-                    ?: throw IllegalStateException("Failed to create SR25519 keypair")
-
-                Keypair(
-                    publicKey = keypair.publicKey().rawData().toByteArray(),
-                    privateKey = keypair.privateKey().rawData().toByteArray(),
-                    keyType = KeyType.SR25519
-                )
-            }
+            KeyType.SR25519 -> createSr25519Keypair(seedData, derivationPath)
             KeyType.ED25519 -> {
+                // ED25519 derivation is not supported
+                require(derivationPath.isEmpty()) {
+                    "Derivation paths are not supported for ED25519 keys on iOS"
+                }
+
                 val keypair = ed25519KeyFactory.deriveFromSeed(seedData, null)
                     ?: throw IllegalStateException("Failed to create ED25519 keypair")
 
@@ -108,6 +100,50 @@ class IOSMnemonicProvider : MnemonicProvider {
                 )
             }
         }
+    }
+
+    /**
+     * Create an SR25519 keypair with optional derivation path.
+     *
+     * Note: Inherits the thread-safety constraints of the parent class.
+     * The underlying NovaCrypto derivation operations are not thread-safe.
+     *
+     * @param seedData The 32-byte mini-secret as NSData
+     * @param derivationPath Substrate derivation path (e.g., "//Alice", "//hard/soft")
+     * @return The derived keypair
+     */
+    private fun createSr25519Keypair(seedData: platform.Foundation.NSData, derivationPath: String): Keypair {
+        // Create base keypair from seed
+        var currentKeypair = sr25519KeyFactory.createKeypairFromSeed(seedData, null)
+            ?: throw IllegalStateException("Failed to create SR25519 keypair from seed")
+
+        // Apply derivation junctions if path is provided
+        if (derivationPath.isNotEmpty()) {
+            for (junction in junctionDecoder.decode(derivationPath)) {
+                val chaincodeData = junction.chaincode.toNSData()
+
+                currentKeypair = when (junction.type) {
+                    JunctionType.HARD -> {
+                        sr25519KeyFactory.createKeypairHard(currentKeypair, chaincodeData, null)
+                            ?: throw IllegalStateException(
+                                "Failed to apply hard derivation for junction in path: $derivationPath"
+                            )
+                    }
+                    JunctionType.SOFT -> {
+                        sr25519KeyFactory.createKeypairSoft(currentKeypair, chaincodeData, null)
+                            ?: throw IllegalStateException(
+                                "Failed to apply soft derivation for junction in path: $derivationPath"
+                            )
+                    }
+                }
+            }
+        }
+
+        return Keypair(
+            publicKey = currentKeypair.publicKey().rawData().toByteArray(),
+            privateKey = currentKeypair.privateKey().rawData().toByteArray(),
+            keyType = KeyType.SR25519
+        )
     }
 }
 
