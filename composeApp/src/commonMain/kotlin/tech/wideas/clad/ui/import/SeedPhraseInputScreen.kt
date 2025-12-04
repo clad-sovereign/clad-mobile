@@ -29,6 +29,7 @@ fun SeedPhraseInputScreen(
     error: String?,
     onWordChanged: (Int, String) -> Unit,
     onWordCountChanged: (Int) -> Unit,
+    onPhrasePasted: (List<String>) -> Unit,
     onValidate: () -> Unit,
     canProceed: Boolean
 ) {
@@ -85,6 +86,7 @@ fun SeedPhraseInputScreen(
                     index = index + 1,
                     word = word,
                     onWordChanged = { newWord -> onWordChanged(index, newWord) },
+                    onPhrasePasted = onPhrasePasted,
                     onNext = {
                         if (index < wordCount - 1) {
                             focusManager.moveFocus(FocusDirection.Next)
@@ -129,15 +131,37 @@ private fun WordInputField(
     index: Int,
     word: String,
     onWordChanged: (String) -> Unit,
+    onPhrasePasted: (List<String>) -> Unit,
     onNext: () -> Unit,
     isLast: Boolean
 ) {
     OutlinedTextField(
         value = word,
         onValueChange = { newValue ->
-            // Only allow lowercase letters
-            val filtered = newValue.filter { it.isLetter() }.lowercase()
-            onWordChanged(filtered)
+            // Check if user pasted a full phrase (multiple words separated by whitespace)
+            val pastedWords = newValue
+                .lowercase()
+                .trim()
+                .split("\\s+".toRegex())
+                .filter { it.isNotBlank() }
+                .map { it.filter { char -> char.isLetter() } }
+                .filter { it.isNotBlank() }
+
+            when {
+                pastedWords.size == 12 || pastedWords.size == 24 -> {
+                    // Full phrase pasted - auto-fill all fields
+                    onPhrasePasted(pastedWords)
+                }
+                pastedWords.size > 1 -> {
+                    // Partial paste - just use the first word
+                    onWordChanged(pastedWords.first())
+                }
+                else -> {
+                    // Single word or normal typing - filter to letters only
+                    val filtered = newValue.filter { it.isLetter() }.lowercase()
+                    onWordChanged(filtered)
+                }
+            }
         },
         modifier = Modifier.fillMaxWidth(),
         label = {

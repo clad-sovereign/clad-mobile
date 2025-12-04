@@ -107,6 +107,9 @@ fun ImportScreen(
                         onWordCountChanged = { count ->
                             viewModel.setWordCount(count)
                         },
+                        onPhrasePasted = { words ->
+                            viewModel.pasteFullPhrase(words)
+                        },
                         onValidate = {
                             viewModel.validateAndDeriveSeedPhrase()
                         },
