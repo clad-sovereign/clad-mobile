@@ -1,0 +1,10 @@
+-- Migration from schema version 3 to 4
+-- Adds mode and derivationPath columns for Live/Demo account support
+-- See docs/live-demo-account-modes.md for design rationale
+
+-- Account mode: 'LIVE' for production (mainnet), 'DEMO' for testing (testnet)
+ALTER TABLE Account ADD COLUMN mode TEXT NOT NULL DEFAULT 'LIVE';
+
+-- Derivation path used to derive this account's keypair from mnemonic
+-- null = master key (no derivation), '//demo' for Demo mode, '//Alice' for dev accounts
+ALTER TABLE Account ADD COLUMN derivationPath TEXT;

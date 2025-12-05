@@ -17,6 +17,37 @@ import kotlin.uuid.Uuid
 private const val ACTIVE_ACCOUNT_KEY = "active_account_id"
 
 /**
+ * Account mode determining which network/environment the account operates on.
+ *
+ * See docs/live-demo-account-modes.md for design rationale.
+ */
+enum class AccountMode {
+    /**
+     * Production mode - real transactions on mainnet.
+     * Uses master key (no derivation path).
+     * RPC endpoint: wss://rpc.clad.so
+     */
+    LIVE,
+
+    /**
+     * Demo/training mode - safe experimentation on testnet.
+     * Uses derivation path "//demo".
+     * RPC endpoint: wss://testnet.clad.so
+     */
+    DEMO;
+
+    companion object {
+        /**
+         * Parse mode from database string value.
+         * Defaults to LIVE for unknown values for backwards compatibility.
+         */
+        fun fromDbValue(value: String): AccountMode {
+            return entries.find { it.name == value } ?: LIVE
+        }
+    }
+}
+
+/**
  * Domain model representing a Substrate/Polkadot account.
  *
  * This contains only non-sensitive metadata. The actual keypair
@@ -28,13 +59,17 @@ private const val ACTIVE_ACCOUNT_KEY = "active_account_id"
  * @property address SS58-encoded public address
  * @property createdAt Timestamp when account was created (epoch milliseconds)
  * @property lastUsedAt Timestamp when account was last used for signing (nullable)
+ * @property mode Account mode (LIVE or DEMO) - determines network/RPC endpoint
+ * @property derivationPath Derivation path used to derive keypair from mnemonic (null = master key)
  */
 data class AccountInfo(
     val id: String,
     val label: String,
     val address: String,
     val createdAt: Long,
-    val lastUsedAt: Long? = null
+    val lastUsedAt: Long? = null,
+    val mode: AccountMode = AccountMode.LIVE,
+    val derivationPath: String? = null
 )
 
 /**
@@ -114,13 +149,17 @@ class AccountRepository(private val database: CladDatabase) {
      *
      * @param label User-defined display name
      * @param address SS58-encoded public address
+     * @param mode Account mode (LIVE or DEMO), defaults to LIVE
+     * @param derivationPath Derivation path used to derive keypair, null for master key
      * @return The created account with generated ID
      * @throws IllegalStateException if address already exists
      */
     @OptIn(ExperimentalUuidApi::class)
     suspend fun create(
         label: String,
-        address: String
+        address: String,
+        mode: AccountMode = AccountMode.LIVE,
+        derivationPath: String? = null
     ): AccountInfo = withContext(Dispatchers.IO) {
         // Check for duplicate address before insert
         val existing = queries.selectByAddress(address).executeAsOneOrNull()
@@ -136,7 +175,9 @@ class AccountRepository(private val database: CladDatabase) {
             label = label,
             address = address,
             createdAt = createdAt,
-            lastUsedAt = null
+            lastUsedAt = null,
+            mode = mode.name,
+            derivationPath = derivationPath
         )
 
         AccountInfo(
@@ -144,7 +185,9 @@ class AccountRepository(private val database: CladDatabase) {
             label = label,
             address = address,
             createdAt = createdAt,
-            lastUsedAt = null
+            lastUsedAt = null,
+            mode = mode,
+            derivationPath = derivationPath
         )
     }
 
@@ -266,7 +309,9 @@ private fun Account.toAccountInfo(): AccountInfo {
         label = label,
         address = address,
         createdAt = createdAt,
-        lastUsedAt = lastUsedAt
+        lastUsedAt = lastUsedAt,
+        mode = AccountMode.fromDbValue(mode),
+        derivationPath = derivationPath
     )
 }
 

@@ -58,6 +58,42 @@ class AccountRepositoryTest {
         assertEquals("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", account.address)
         assertTrue(account.createdAt > 0)
         assertNull(account.lastUsedAt)
+        // Default values for new fields
+        assertEquals(AccountMode.LIVE, account.mode)
+        assertNull(account.derivationPath)
+    }
+
+    @Test
+    fun create_withModeAndDerivationPath_storesValues() = runTest {
+        val account = repository.create(
+            label = "Demo Account",
+            address = "5DemoAddress123",
+            mode = AccountMode.DEMO,
+            derivationPath = "//demo"
+        )
+
+        assertEquals(AccountMode.DEMO, account.mode)
+        assertEquals("//demo", account.derivationPath)
+
+        // Verify persisted correctly
+        val retrieved = repository.getById(account.id)
+        assertNotNull(retrieved)
+        assertEquals(AccountMode.DEMO, retrieved.mode)
+        assertEquals("//demo", retrieved.derivationPath)
+    }
+
+    @Test
+    fun create_withAliceDerivationPath_storesPath() = runTest {
+        // Test account seeding use case (issue #53)
+        val account = repository.create(
+            label = "Alice",
+            address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            mode = AccountMode.DEMO,
+            derivationPath = "//Alice"
+        )
+
+        assertEquals(AccountMode.DEMO, account.mode)
+        assertEquals("//Alice", account.derivationPath)
     }
 
     @Test
