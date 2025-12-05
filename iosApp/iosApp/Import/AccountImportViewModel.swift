@@ -301,7 +301,9 @@ final class AccountImportViewModel {
                 // Create account first to get the ID
                 let account = try await accountRepository.create(
                     label: finalLabel,
-                    address: importData.address
+                    address: importData.address,
+                    mode: AccountMode.live,
+                    derivationPath: nil
                 )
 
                 // Save keypair with biometric protection
@@ -339,7 +341,9 @@ final class AccountImportViewModel {
                 // Watch-only account - just save metadata
                 _ = try await accountRepository.create(
                     label: finalLabel,
-                    address: importData.address
+                    address: importData.address,
+                    mode: AccountMode.live,
+                    derivationPath: nil
                 )
 
                 flowState = .success
