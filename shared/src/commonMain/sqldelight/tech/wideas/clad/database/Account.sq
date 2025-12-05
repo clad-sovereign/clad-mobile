@@ -16,7 +16,15 @@ CREATE TABLE Account (
     createdAt INTEGER NOT NULL,
 
     -- Timestamp when account was last used for signing (epoch milliseconds, nullable)
-    lastUsedAt INTEGER
+    lastUsedAt INTEGER,
+
+    -- Account mode: 'LIVE' for production (mainnet), 'DEMO' for testing (testnet)
+    -- See docs/live-demo-account-modes.md for design rationale
+    mode TEXT NOT NULL DEFAULT 'LIVE',
+
+    -- Derivation path used to derive this account's keypair from mnemonic
+    -- null = master key (no derivation), '//demo' for Demo mode, '//Alice' for dev accounts
+    derivationPath TEXT
 );
 
 -- Get all accounts ordered by creation time (newest first)
@@ -39,8 +47,8 @@ WHERE address = ?;
 
 -- Insert a new account
 insert:
-INSERT INTO Account (id, label, address, createdAt, lastUsedAt)
-VALUES (?, ?, ?, ?, ?);
+INSERT INTO Account (id, label, address, createdAt, lastUsedAt, mode, derivationPath)
+VALUES (?, ?, ?, ?, ?, ?, ?);
 
 -- Update account label
 updateLabel:
@@ -63,3 +71,10 @@ WHERE id = ?;
 countAll:
 SELECT COUNT(*)
 FROM Account;
+
+-- Get accounts by mode (LIVE or DEMO)
+selectByMode:
+SELECT *
+FROM Account
+WHERE mode = ?
+ORDER BY createdAt DESC;

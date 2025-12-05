@@ -165,4 +165,117 @@ class DatabaseMigrationTest {
 
         db.close()
     }
+
+    /**
+     * Tests migration from schema version 3 to version 4.
+     *
+     * Version 3 had Account table without mode/derivationPath.
+     * Version 4 adds mode (defaults to 'LIVE') and derivationPath (nullable).
+     */
+    @Test
+    fun migration_v3_to_v4_addsModeAndDerivationPath() = runTest {
+        // Step 1: Create a version 3 database manually
+        createVersion3Database()
+
+        // Step 2: Insert test data into v3 schema
+        insertV3TestData()
+
+        // Step 3: Open database with current schema (triggers migration)
+        val driver = AndroidSqliteDriver(
+            schema = CladDatabase.Schema,
+            context = context,
+            name = testDbName
+        )
+        val database = CladDatabase(driver)
+        val repository = AccountRepository(database)
+
+        // Step 4: Verify existing accounts survived migration with default values
+        val accounts = repository.getAll()
+        assertEquals(2, accounts.size)
+
+        val alice = accounts.find { it.label == "Alice" }
+        assertNotNull(alice)
+        assertEquals("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", alice.address)
+        // Migration should set default mode to LIVE
+        assertEquals(AccountMode.LIVE, alice.mode)
+        // Migration should leave derivationPath as null
+        assertNull(alice.derivationPath)
+
+        val bob = accounts.find { it.label == "Bob" }
+        assertNotNull(bob)
+        assertEquals(AccountMode.LIVE, bob.mode)
+        assertNull(bob.derivationPath)
+
+        // Step 5: Verify new accounts can use mode and derivationPath
+        val demoAccount = repository.create(
+            label = "Demo Test",
+            address = "5DemoTestAddress123",
+            mode = AccountMode.DEMO,
+            derivationPath = "//demo"
+        )
+        assertEquals(AccountMode.DEMO, demoAccount.mode)
+        assertEquals("//demo", demoAccount.derivationPath)
+
+        driver.close()
+    }
+
+    /**
+     * Creates a database with version 3 schema (Account without mode/derivationPath).
+     */
+    private fun createVersion3Database() {
+        val db = SQLiteDatabase.openOrCreateDatabase(
+            context.getDatabasePath(testDbName),
+            null
+        )
+
+        // Create Account table (v3 schema - without mode and derivationPath)
+        db.execSQL("""
+            CREATE TABLE Account (
+                id TEXT NOT NULL PRIMARY KEY,
+                label TEXT NOT NULL,
+                address TEXT NOT NULL UNIQUE,
+                createdAt INTEGER NOT NULL,
+                lastUsedAt INTEGER
+            )
+        """.trimIndent())
+
+        // Create AppSettings table (added in v2)
+        db.execSQL("""
+            CREATE TABLE AppSettings (
+                key TEXT NOT NULL PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        """.trimIndent())
+
+        // Set schema version to 3
+        db.version = 3
+
+        db.close()
+    }
+
+    /**
+     * Inserts test data into a v3 database.
+     */
+    private fun insertV3TestData() {
+        val db = SQLiteDatabase.openOrCreateDatabase(
+            context.getDatabasePath(testDbName),
+            null
+        )
+
+        val now = System.currentTimeMillis()
+
+        // Insert Alice (no mode or derivationPath columns)
+        db.execSQL("""
+            INSERT INTO Account (id, label, address, createdAt, lastUsedAt)
+            VALUES ('alice-id-123', 'Alice', '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', $now, NULL)
+        """.trimIndent())
+
+        // Insert Bob
+        db.execSQL("""
+            INSERT INTO Account (id, label, address, createdAt, lastUsedAt)
+            VALUES ('bob-id-456', 'Bob', '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', ${now - 1000}, ${now - 500})
+        """.trimIndent())
+
+        db.close()
+    }
 }
