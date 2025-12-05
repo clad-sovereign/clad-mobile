@@ -8,8 +8,8 @@ import Shared
 final class AccountListViewModel {
 
     // MARK: - Dependencies
-    private let accountRepository: AccountRepository
-    private let keyStorage: KeyStorage
+    private let accountRepository: any AccountRepositoryProtocol
+    private let keyStorage: any KeyStorageProtocol
     private var observeTask: Task<Void, Never>?
     private var observeActiveTask: Task<Void, Never>?
 
@@ -24,12 +24,28 @@ final class AccountListViewModel {
     var showAccountDetails: Bool = false
 
     // MARK: - Initialization
+
+    /// Production initializer using DependencyContainer
     init() {
-        let helper = ViewModelHelper()
-        self.accountRepository = helper.getAccountRepository()
-        self.keyStorage = helper.getKeyStorage()
+        let container = DependencyContainer.shared
+        self.accountRepository = container.accountRepository
+        self.keyStorage = container.keyStorage
 
         startObserving()
+    }
+
+    /// Test initializer for dependency injection with protocols
+    init(
+        accountRepository: any AccountRepositoryProtocol,
+        keyStorage: any KeyStorageProtocol,
+        startObserving: Bool = true
+    ) {
+        self.accountRepository = accountRepository
+        self.keyStorage = keyStorage
+
+        if startObserving {
+            self.startObserving()
+        }
     }
 
     func cleanup() {

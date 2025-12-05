@@ -61,9 +61,9 @@ struct ImportData {
 final class AccountImportViewModel {
 
     // MARK: - Dependencies
-    private let accountRepository: AccountRepository
-    private let mnemonicProvider: MnemonicProvider
-    private let keyStorage: KeyStorage
+    private let accountRepository: any AccountRepositoryProtocol
+    private let mnemonicProvider: any MnemonicProviderProtocol
+    private let keyStorage: any KeyStorageProtocol
 
     // MARK: - Observable State
     var flowState: ImportFlowState = .selectMethod
@@ -95,15 +95,21 @@ final class AccountImportViewModel {
     }
 
     // MARK: - Initialization
+
+    /// Production initializer using DependencyContainer
     init() {
-        let helper = ViewModelHelper()
-        self.accountRepository = helper.getAccountRepository()
-        self.mnemonicProvider = helper.getMnemonicProvider()
-        self.keyStorage = helper.getKeyStorage()
+        let container = DependencyContainer.shared
+        self.accountRepository = container.accountRepository
+        self.mnemonicProvider = container.mnemonicProvider
+        self.keyStorage = container.keyStorage
     }
 
-    /// Test initializer for dependency injection
-    init(accountRepository: AccountRepository, mnemonicProvider: MnemonicProvider, keyStorage: KeyStorage) {
+    /// Test initializer for dependency injection with protocols
+    init(
+        accountRepository: any AccountRepositoryProtocol,
+        mnemonicProvider: any MnemonicProviderProtocol,
+        keyStorage: any KeyStorageProtocol
+    ) {
         self.accountRepository = accountRepository
         self.mnemonicProvider = mnemonicProvider
         self.keyStorage = keyStorage
