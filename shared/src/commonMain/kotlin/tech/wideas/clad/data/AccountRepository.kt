@@ -39,10 +39,11 @@ enum class AccountMode {
     companion object {
         /**
          * Parse mode from database string value.
-         * Defaults to LIVE for unknown values for backwards compatibility.
+         * Defaults to DEMO for unknown values for safety - better to accidentally
+         * be on testnet than to accidentally perform real transactions on mainnet.
          */
         fun fromDbValue(value: String): AccountMode {
-            return entries.find { it.name == value } ?: LIVE
+            return entries.find { it.name == value } ?: DEMO
         }
     }
 }
