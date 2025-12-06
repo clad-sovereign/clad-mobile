@@ -78,6 +78,10 @@ final class AccountRepositoryWrapper: AccountRepositoryProtocol {
 // MARK: - Key Storage Wrapper
 
 /// Wrapper that implements `KeyStorageProtocol` by delegating to the Kotlin `KeyStorage`.
+///
+/// Note: Methods returning `KeyStorageResult<AnyObject>` use force casts because SKIE
+/// handles Kotlin sealed class variance at runtime. The casts succeed for all production
+/// calls but cannot be easily mocked for error result types (see issue #71 known limitation).
 @MainActor
 final class KeyStorageWrapper: KeyStorageProtocol {
     private let storage: KeyStorage
