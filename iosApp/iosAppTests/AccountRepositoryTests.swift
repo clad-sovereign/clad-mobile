@@ -27,7 +27,9 @@ final class AccountRepositoryTests: XCTestCase {
     func testCreateInsertsAccountAndReturnsIt() async throws {
         let account = try await repository.create(
             label: "Test Account",
-            address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+            address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            mode: .live,
+            derivationPath: nil
         )
 
         XCTAssertFalse(account.id.isEmpty, "ID should not be empty")
@@ -42,7 +44,9 @@ final class AccountRepositoryTests: XCTestCase {
     func testGetByIdReturnsAccount() async throws {
         let created = try await repository.create(
             label: "Test",
-            address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+            address: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            mode: .live,
+            derivationPath: nil
         )
 
         let retrieved = try await repository.getById(id: created.id)
@@ -64,7 +68,9 @@ final class AccountRepositoryTests: XCTestCase {
         let address = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
         let created = try await repository.create(
             label: "Test",
-            address: address
+            address: address,
+            mode: .live,
+            derivationPath: nil
         )
 
         let retrieved = try await repository.getByAddress(address: address)
@@ -82,11 +88,11 @@ final class AccountRepositoryTests: XCTestCase {
 
     func testGetAllReturnsAllAccountsOrderedByCreatedAtDesc() async throws {
         // Add small delays to ensure distinct timestamps
-        _ = try await repository.create(label: "First", address: "5Address1")
+        _ = try await repository.create(label: "First", address: "5Address1", mode: .live, derivationPath: nil)
         try await Task.sleep(nanoseconds: 10_000_000) // 10ms
-        _ = try await repository.create(label: "Second", address: "5Address2")
+        _ = try await repository.create(label: "Second", address: "5Address2", mode: .live, derivationPath: nil)
         try await Task.sleep(nanoseconds: 10_000_000) // 10ms
-        _ = try await repository.create(label: "Third", address: "5Address3")
+        _ = try await repository.create(label: "Third", address: "5Address3", mode: .live, derivationPath: nil)
 
         let accounts = try await repository.getAll()
 
@@ -102,7 +108,9 @@ final class AccountRepositoryTests: XCTestCase {
     func testUpdateLabelChangesAccountLabel() async throws {
         let account = try await repository.create(
             label: "Original",
-            address: "5Address"
+            address: "5Address",
+            mode: .live,
+            derivationPath: nil
         )
 
         try await repository.updateLabel(id: account.id, label: "Updated")
@@ -117,7 +125,9 @@ final class AccountRepositoryTests: XCTestCase {
     func testMarkAsUsedUpdatesLastUsedAt() async throws {
         let account = try await repository.create(
             label: "Test",
-            address: "5Address"
+            address: "5Address",
+            mode: .live,
+            derivationPath: nil
         )
         XCTAssertNil(account.lastUsedAt)
 
@@ -134,7 +144,9 @@ final class AccountRepositoryTests: XCTestCase {
     func testDeleteRemovesAccount() async throws {
         let account = try await repository.create(
             label: "Test",
-            address: "5Address"
+            address: "5Address",
+            mode: .live,
+            derivationPath: nil
         )
 
         try await repository.delete(id: account.id)
@@ -149,11 +161,11 @@ final class AccountRepositoryTests: XCTestCase {
         let initialCount = try await repository.count()
         XCTAssertEqual(initialCount, 0)
 
-        _ = try await repository.create(label: "First", address: "5Address1")
+        _ = try await repository.create(label: "First", address: "5Address1", mode: .live, derivationPath: nil)
         let countAfterFirst = try await repository.count()
         XCTAssertEqual(countAfterFirst, 1)
 
-        _ = try await repository.create(label: "Second", address: "5Address2")
+        _ = try await repository.create(label: "Second", address: "5Address2", mode: .live, derivationPath: nil)
         let countAfterSecond = try await repository.count()
         XCTAssertEqual(countAfterSecond, 2)
     }
