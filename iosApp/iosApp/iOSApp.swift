@@ -38,13 +38,6 @@ struct iOSApp: App {
     /// Trigger debug account seeding on first launch.
     /// Only runs in debug builds when database is empty.
     private func seedDebugAccountsIfNeeded() async {
-        await withCheckedContinuation { continuation in
-            Task {
-                // Call the Kotlin suspend function from Swift
-                // Note: seedIfNeeded() returns a sealed class result
-                _ = try? await DebugSeederHelper.shared.seedIfNeeded()
-                continuation.resume()
-            }
-        }
+        _ = try? await DebugSeederHelper.shared.seedIfNeeded()
     }
 }
