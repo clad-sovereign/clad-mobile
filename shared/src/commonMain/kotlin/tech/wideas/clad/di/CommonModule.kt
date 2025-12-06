@@ -6,6 +6,7 @@ import org.koin.dsl.module
 import tech.wideas.clad.data.AccountRepository
 import tech.wideas.clad.data.SettingsRepository
 import tech.wideas.clad.database.CladDatabase
+import tech.wideas.clad.debug.DebugAccountSeeder
 import tech.wideas.clad.substrate.SubstrateClient
 
 /**
@@ -30,4 +31,8 @@ val commonModule = module {
 
     // AccountRepository for account metadata persistence
     singleOf(::AccountRepository)
+
+    // DebugAccountSeeder for seeding test accounts in debug builds
+    // Depends on AccountRepository, KeyStorage, and MnemonicProvider from platform module
+    singleOf(::DebugAccountSeeder)
 }

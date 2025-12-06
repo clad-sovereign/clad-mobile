@@ -6,8 +6,10 @@ struct iOSApp: App {
     init() {
         // Configure Kermit logger for iOS
         #if DEBUG
+        let isDebug = true
         KermitLogger.Companion.shared.initialize(isDebug: true)
         #else
+        let isDebug = false
         KermitLogger.Companion.shared.initialize(isDebug: false)
         #endif
 
@@ -19,13 +21,23 @@ struct iOSApp: App {
         let keyStorageHelper = BiometricKeychainHelper(service: "tech.wideas.clad.keystorage")
         KeyStorageFactory.shared.setKeychainHelper(helper: keyStorageHelper)
 
-        // Initialize Koin DI
-        KoinInitializer.shared.initialize()
+        // Initialize Koin DI with debug flag
+        KoinInitializer.shared.initialize(isDebug: isDebug)
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task {
+                    // Seed debug accounts on first launch (debug builds only)
+                    await seedDebugAccountsIfNeeded()
+                }
         }
+    }
+
+    /// Trigger debug account seeding on first launch.
+    /// Only runs in debug builds when database is empty.
+    private func seedDebugAccountsIfNeeded() async {
+        _ = try? await DebugSeederHelper.shared.seedIfNeeded()
     }
 }
